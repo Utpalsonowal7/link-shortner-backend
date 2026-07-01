@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Provider {
+  GOOGLE
+  EMAIL
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  name            String?
+  email           String   @unique
+  password        String?
+  isEmailVerified Boolean  @default(false)
+  provider        Provider @default(EMAIL)
+  providerId      String?
+  role            Role     @default(USER)
+  avatar          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions Session[]
+  links    Link[]
+
+  @@map("users")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, expiresAt])
+  @@map("sessions")
+}
+
+model Link {
+  id        Int     @id @default(autoincrement())
+  shortCode String  @unique
+  longUrl   String
+  title     String?
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+
+  tags String[] @default([])
+
+  totalClicks Int          @default(0)
+  clicks      ClickEvent[]
+
+  @@index([userId])
+  @@index([shortCode])
+  @@map("links")
+}
+
+model ClickEvent {
+  id Int @id @default(autoincrement())
+
+  linkId Int
+  link   Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  timestamp DateTime @default(now())
+  ip        String?
+
+  continent String?
+  country   String?
+  region String?
+  city      String?
+  district  String?
+
+  device  String? 
+  browser String?
+  os      String?
+
+  referrer String?
+
+  @@index([linkId])
+  @@index([timestamp])
+  @@index([linkId, timestamp])
+  @@map("click_events")
+}

@@ -1,0 +1,42 @@
+{
+  "name": "url_shortner_backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Utpal Sonowal",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.8.0"
+  },
+  "dependencies": {
+    "@getbrevo/brevo": "^5.0.4",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "axios": "^1.18.1",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^5.79.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "ioredis": "^5.11.1",
+    "ip-geolocation-api-javascript-sdk": "^3.0.1",
+    "jsonwebtoken": "^9.0.3",
+    "mailgen": "^2.0.34",
+    "morgan": "^1.11.0",
+    "nanoid": "^5.1.16",
+    "pg": "^8.21.0",
+    "ua-parser-js": "^2.0.10",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
+  }
+}
