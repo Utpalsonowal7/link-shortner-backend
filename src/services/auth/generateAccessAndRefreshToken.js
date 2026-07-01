@@ -21,7 +21,7 @@ export const generateAccessAndRefreshToken = async (data, clientInfo) => {
                refreshToken: hashRefreshToken,
                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                ipAddress: clientInfo?.ipAddress,
-               userAgent: clientInfo?.userAgent
+               userAgent: clientInfo?.device
           }
      });
 
