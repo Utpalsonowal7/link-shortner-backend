@@ -41,9 +41,7 @@ app.use(
      }),
 );
 
-console.log("❌");
 app.use(clientDetails);
-console.log("❌");
 
 import healthCheckRoute from "./routes/healthCheck.route.js";
 import authRoute from "./routes/auth.routes.js";

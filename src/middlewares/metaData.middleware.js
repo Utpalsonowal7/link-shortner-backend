@@ -1,10 +1,11 @@
 import { getClientInfo } from "../utils/parseDevice.js";
 
 export const clientDetails = (req, res, next) => {
-     console.log("user ip and user agent", req.ip);
      const userAgent = req.get("user-agent") || "";
      const data = getClientInfo(userAgent);
-     console.log(data);
+console.log("req.ip:", req.ip);
+console.log("x-forwarded-for:", req.headers["x-forwarded-for"]);
+console.log("user-agent:", req.get("User-Agent"));
      req.clientInfo = {
           ipAddress: req.ip,
           device: data.device,
