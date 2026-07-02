@@ -263,13 +263,13 @@ const getUserStats = async (userId) => {
           }),
      ]);
 
-     // compute deltas
+     
      const deltaPercent = (current, previous) => {
           if (!previous) return null;
           return Math.round(((current - previous) / previous) * 100);
      };
 
-     // resolve top link
+     
      let topLink = null;
      if (topLinkToday[0]) {
           const link = await prisma.link.findUnique({
@@ -277,7 +277,7 @@ const getUserStats = async (userId) => {
                select: { shortCode: true },
           });
           topLink = {
-               shortUrl: `${process.env.SHORT_DOMAIN}/${link.shortCode}`,
+               shortUrl: `${process.env.BACK_END_URL}${link.shortCode}`,
                clicksToday: topLinkToday[0]._count.linkId,
           };
      }
@@ -289,7 +289,7 @@ const getUserStats = async (userId) => {
           activeLinks,
           linksThisMonth,
 
-          // deltas for stat cards
+          
           deltas: {
                clicksToday: deltaPercent(clicksToday, clicksYesterday),
                clicksThisMonth: deltaPercent(clicksThisMonth, clicksLastMonth),

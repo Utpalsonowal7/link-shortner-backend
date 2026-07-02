@@ -10,4 +10,15 @@ const getPublicStats = asyncHandler(async (req, res) => {
           .json(new ApiResponse(200, stats, "Stats fetched successfully"));
 });
 
-export default { getPublicStats };
+const getTopStats = asyncHandler(async (req, res) => {
+    
+     const stats = await StatsServices.GetTopAndRecentLinksServices(
+          req.user.id,
+     );
+
+     return res
+          .status(200)
+          .json(new ApiResponse(200, stats, "Stats fetch successfully"));
+});
+
+export default { getPublicStats, getTopStats };

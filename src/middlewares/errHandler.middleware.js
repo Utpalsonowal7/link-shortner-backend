@@ -25,6 +25,8 @@ export const errHandler = (err, req, res, next) => {
           );
      }
 
+     console.log(error);
+
      const response = {
           ...error,
           message: error.message,

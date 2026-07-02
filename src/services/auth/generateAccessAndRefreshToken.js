@@ -3,7 +3,6 @@ import { generateAccessToken, generateRefreshToken } from "../../utils/jwt.js";
 import { hashToken } from "../../utils/hashToken.js";
 
 export const generateAccessAndRefreshToken = async (data, clientInfo) => {
-     console.log(clientInfo.device);
      const accessToken = generateAccessToken({
           id: data?.id,
           name: data?.name ?? null,
