@@ -130,36 +130,124 @@ const trackClick = async (linkId, clientInfo) => {
      ]);
 };
 
-const getLinkAnalytics = async (id, userId) => {
-     await getLinkById(id, userId); 
+const getLinkAnalytics = async (id, userId, query = {}) => {
+     await getLinkById(id, userId);
 
-     const [link, clicksByCountry, clicksByDevice, recentClicks] =
-          await Promise.all([
-               prisma.link.findUnique({ where: { id: Number(id) } }),
-               prisma.clickEvent.groupBy({
-                    by: ["country"],
-                    where: { linkId: Number(id) },
-                    _count: { country: true },
-                    orderBy: { _count: { country: "desc" } },
-               }),
-               prisma.clickEvent.groupBy({
-                    by: ["device"],
-                    where: { linkId: Number(id) },
-                    _count: { device: true },
-               }),
-               prisma.clickEvent.findMany({
-                    where: { linkId: Number(id) },
-                    orderBy: { timestamp: "desc" },
-                    take: 50,
-               }),
-          ]);
+     const { range = "7d" } = query;
+     const days = range === "30d" ? 30 : range === "24h" ? 1 : 7;
 
-     return {
+     const since = new Date();
+     since.setDate(since.getDate() - days);
+
+     const startOfToday = new Date();
+     startOfToday.setHours(0, 0, 0, 0);
+
+     const [
           link,
-          totalClicks: link.totalClicks,
           clicksByCountry,
           clicksByDevice,
+          clicksByOs,
+          clicksByContinent,
           recentClicks,
+          clicksInRange,
+          clicksToday,
+          uniqueCountries,
+     ] = await Promise.all([
+          prisma.link.findUnique({ where: { id: Number(id) } }),
+
+          prisma.clickEvent.groupBy({
+               by: ["country"],
+               where: { linkId: Number(id) },
+               _count: { country: true },
+               orderBy: { _count: { country: "desc" } },
+               take: 5,
+          }),
+
+          prisma.clickEvent.groupBy({
+               by: ["device"],
+               where: { linkId: Number(id) },
+               _count: { device: true },
+               orderBy: { _count: { device: "desc" } },
+          }),
+
+          prisma.clickEvent.groupBy({
+               by: ["os"],
+               where: { linkId: Number(id), os: { not: null } },
+               _count: { os: true },
+               orderBy: { _count: { os: "desc" } },
+               take: 5,
+          }),
+
+          prisma.clickEvent.groupBy({
+               by: ["continent"],
+               where: { linkId: Number(id), continent: { not: null } },
+               _count: { continent: true },
+               orderBy: { _count: { continent: "desc" } },
+          }),
+
+          prisma.clickEvent.findMany({
+               where: { linkId: Number(id) },
+               orderBy: { timestamp: "desc" },
+               take: 20,
+          }),
+
+          prisma.clickEvent.findMany({
+               where: { linkId: Number(id), timestamp: { gte: since } },
+               select: { timestamp: true },
+          }),
+
+          prisma.clickEvent.count({
+               where: { linkId: Number(id), timestamp: { gte: startOfToday } },
+          }),
+
+          prisma.clickEvent.findMany({
+               where: { linkId: Number(id), country: { not: null } },
+               select: { country: true },
+               distinct: ["country"],
+          }),
+     ]);
+
+     // time series bucketing
+     const buckets = {};
+     for (let i = 0; i < days; i++) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const key = d.toISOString().slice(0, 10);
+          buckets[key] = 0;
+     }
+     clicksInRange.forEach((c) => {
+          const key = c.timestamp.toISOString().slice(0, 10);
+          if (buckets[key] !== undefined) buckets[key]++;
+     });
+     const timeSeries = Object.entries(buckets)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+     // avg per day since link was created
+     const daysSinceCreated = Math.max(
+          1,
+          Math.ceil(
+               (Date.now() - new Date(link.createdAt).getTime()) /
+                    (1000 * 60 * 60 * 24),
+          ),
+     );
+     const avgPerDay = Math.round(link.totalClicks / daysSinceCreated);
+
+     return {
+          link: {
+               ...link,
+               shortUrl: `${process.env.SHORT_DOMAIN}/${link.shortCode}`,
+          },
+          totalClicks: link.totalClicks,
+          clicksToday,
+          avgPerDay,
+          uniqueCountries: uniqueCountries.length,
+          clicksByCountry,
+          clicksByDevice,
+          clicksByOs,
+          clicksByContinent,
+          recentClicks,
+          timeSeries,
      };
 };
 
