@@ -232,11 +232,11 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           ),
      );
      const avgPerDay = Math.round(link.totalClicks / daysSinceCreated);
-
+console.log(timeSeries);
      return {
           link: {
                ...link,
-               shortUrl: `${process.env.SHORT_DOMAIN}/${link.shortCode}`,
+               shortUrl: `${process.env.BACK_END_URL}${link.shortCode}`,
           },
           totalClicks: link.totalClicks,
           clicksToday,
