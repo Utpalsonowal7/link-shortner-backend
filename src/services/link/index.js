@@ -24,7 +24,7 @@ const createLink = async (data, userId) => {
 
 const getUserLinks = async (userId, query = {}) => {
      const { page = 1, limit = 20, search } = query;
-   
+
      const where = {
           userId,
           ...(search && {
@@ -72,7 +72,6 @@ const getLinkById = async (id, userId) => {
 
      return link;
 };
-
 
 const deleteLink = async (id, userId) => {
      await getLinkById(id, userId);
@@ -152,6 +151,8 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           clicksInRange,
           clicksToday,
           uniqueCountries,
+          clicksByCities,
+          clicksByRegion,
      ] = await Promise.all([
           prisma.link.findUnique({ where: { id: Number(id) } }),
 
@@ -205,6 +206,22 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
                select: { country: true },
                distinct: ["country"],
           }),
+
+          prisma.clickEvent.groupBy({
+               by: ["city"],
+               where: { linkId: Number(id), city: { not: null } },
+               _count: { city: true },
+               orderBy: { _count: { city: "desc" } },
+               take: 5,
+          }),
+
+          prisma.clickEvent.groupBy({
+               by: ["region"],
+               where: { linkId: Number(id), region: { not: null } },
+               _count: { region: true },
+               orderBy: { _count: { region: "desc" } },
+               take: 5,
+          }),
      ]);
 
      // time series bucketing
@@ -232,7 +249,7 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           ),
      );
      const avgPerDay = Math.round(link.totalClicks / daysSinceCreated);
-console.log(timeSeries);
+
      return {
           link: {
                ...link,
@@ -248,9 +265,10 @@ console.log(timeSeries);
           clicksByContinent,
           recentClicks,
           timeSeries,
+          clicksByCities,
+          clicksByRegion
      };
 };
-
 
 const getUserStats = async (userId) => {
      const startOfToday = new Date();
@@ -351,13 +369,11 @@ const getUserStats = async (userId) => {
           }),
      ]);
 
-     
      const deltaPercent = (current, previous) => {
           if (!previous) return null;
           return Math.round(((current - previous) / previous) * 100);
      };
 
-     
      let topLink = null;
      if (topLinkToday[0]) {
           const link = await prisma.link.findUnique({
@@ -377,7 +393,6 @@ const getUserStats = async (userId) => {
           activeLinks,
           linksThisMonth,
 
-          
           deltas: {
                clicksToday: deltaPercent(clicksToday, clicksYesterday),
                clicksThisMonth: deltaPercent(clicksThisMonth, clicksLastMonth),
