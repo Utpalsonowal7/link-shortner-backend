@@ -60,6 +60,9 @@ model Link {
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  password              String?
+  is_password_protected Boolean @default(false)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   expiresAt DateTime?
@@ -86,11 +89,11 @@ model ClickEvent {
 
   continent String?
   country   String?
-  region String?
+  region    String?
   city      String?
   district  String?
 
-  device  String? 
+  device  String?
   browser String?
   os      String?
 

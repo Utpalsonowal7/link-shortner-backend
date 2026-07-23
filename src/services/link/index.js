@@ -2,11 +2,17 @@ import { prisma } from "../../lib/db.js";
 import { ApiError } from "../../utils/api_error.js";
 import { generateUniqueShortCode } from "./uniqueCode.js";
 import { getClientGeoInfo } from "../geo.service.js";
+import bcrypt, { hash } from "bcrypt";
+import { ApiResponse } from "../../utils/api_response.js";
 
 const createLink = async (data, userId) => {
-     const { longUrl, title, tags } = data;
+     const { longUrl, title, tags, customCode, pass } = data;
 
-     const shortCode = await generateUniqueShortCode();
+     const shortCode = customCode
+          ? customCode
+          : await generateUniqueShortCode();
+
+     const password = pass ? await bcrypt.hash(pass, 10) : null;
 
      const link = await prisma.link.create({
           data: {
@@ -16,6 +22,7 @@ const createLink = async (data, userId) => {
                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                tags: tags ?? [],
                userId,
+               password,
           },
      });
 
@@ -98,8 +105,45 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
           throw new ApiError(410, "This link has expired");
      }
 
+     if (link.is_password_protected) {
+          return;
+     }
+
      trackClick(link.id, clientInfo).catch((err) => {
           console.error("Click tracking failed:", err.message);
+     });
+
+     return link.longUrl;
+};
+
+const verifyAndRedirect = async (shortCode, password, clientInfo) => {
+     console.log(shortCode);
+     const link = await prisma.link.findUnique({
+          where: {
+               shortCode: shortCode,
+          },
+     });
+
+     if (!link) {
+          throw new ApiError(404, "Link not found");
+     }
+
+     if (!link.isActive) {
+          throw new ApiError(410, "This link has been deactivated");
+     }
+
+     if (link.expiresAt && link.expiresAt < new Date()) {
+          throw new ApiError(410, "This link has expired");
+     }
+
+     const isPassValid = await bcrypt.compare(password, link.password);
+
+     if (!isPassValid) {
+          throw new ApiError(400, "Invalid credentials");
+     }
+
+     trackClick(link.id, clientInfo).catch((err) => {
+          console.error("Error saving analytics", err.message);
      });
 
      return link.longUrl;
@@ -266,7 +310,7 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           recentClicks,
           timeSeries,
           clicksByCities,
-          clicksByRegion
+          clicksByRegion,
      };
 };
 
@@ -435,6 +479,22 @@ const getUserStats = async (userId) => {
      };
 };
 
+const editLink = async (password, id) => {
+     const hashPassword = await bcrypt.hash(password, 10);
+
+     const res = await prisma.link.update({
+          where: {
+               id: Number(id),
+          },
+          data: {
+               password: hashPassword,
+               is_password_protected: true,
+          },
+     });
+
+     console.log(res);
+};
+
 export default {
      CreateLinkService: createLink,
      GetUserLinksService: getUserLinks,
@@ -443,4 +503,6 @@ export default {
      ResolveAndTrackService: resolveAndTrack,
      GetLinkAnalyticsService: getLinkAnalytics,
      GetUserStatsService: getUserStats,
+     EditLinkService: editLink,
+     VerifyLinkPasswordService: verifyAndRedirect,
 };

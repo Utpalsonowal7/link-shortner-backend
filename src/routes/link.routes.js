@@ -6,7 +6,6 @@ import linkController from "../controllers/link.controller.js";
 
 const router = Router();
 
-
 router
      .route("/")
      .post(verifyJWT, validate(createLinkSchema), linkController.createLink)
@@ -14,8 +13,12 @@ router
           verifyJWT,
           validate(linkQuerySchema, "query"),
           linkController.getUserLinks,
-);
-     
+     );
+
+router.route("/verify").post(linkController.verifyAndRedirect);
+
+router.route("/:id").post(verifyJWT, linkController.editLink);
+
 router.route("/stats").get(verifyJWT, linkController.getUserStats);
 
 router
@@ -26,7 +29,6 @@ router
 router.route("/:id/analytics").get(verifyJWT, linkController.getLinkAnalytics);
 
 export default router;
-
 
 export const redirectRouterExport = Router().get(
      "/:shortCode",

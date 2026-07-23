@@ -11,7 +11,7 @@ const createLinkSchema = z.object({
           .string()
           .trim()
           .min(3, "Custom code must be at least 3 characters")
-          .max(30, "Custom code must be under 30 characters")
+          .max(7, "Custom code must be under 30 characters")
           .regex(
                /^[a-zA-Z0-9-_]+$/,
                "Only letters, numbers, hyphens and underscores allowed",
@@ -21,6 +21,10 @@ const createLinkSchema = z.object({
           .array(z.string().trim().max(30))
           .max(10, "Maximum 10 tags allowed")
           .optional(),
+     passwprd: z
+          .string()
+          .min(5, "Password must be at least 5 character long")
+          .optional(),
 });
 
 const linkQuerySchema = z.object({
@@ -29,4 +33,4 @@ const linkQuerySchema = z.object({
      search: z.string().trim().optional(),
 });
 
-export { createLinkSchema,linkQuerySchema };
+export { createLinkSchema, linkQuerySchema };

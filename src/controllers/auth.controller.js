@@ -133,7 +133,7 @@ const googleAuthCallback = asyncHandler(async (req, res) => {
         .status(200)
         .cookie("accessToken", accessToken, accessTokenOptions)
         .cookie("refreshToken", refreshToken, refreshTokenOptions)
-        .redirect(`${process.env.FRONTEND_URL}/dashboard`);
+        .redirect(`${process.env.FRONTEND_URL}/home`);
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {

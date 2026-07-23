@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/api_response.js";
 
 const createLink = asyncHandler(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
+     console.log(link);
      const shortLink = `${process.env.BACK_END_URL}${link.shortCode}`;
 
      return res
@@ -92,7 +93,38 @@ const redirectLink = asyncHandler(async (req, res) => {
           clientInfo,
      );
 
+     if (!longUrl) {
+          return res.redirect(
+               `http://localhost:5173/protectedlink?q=${shortCode}`,
+          );
+     }
+
      return res.redirect(longUrl);
+});
+
+const verifyAndRedirect = asyncHandler(async (req, res) => {
+   
+     const { q, password } = req.body;
+
+     const clientInfo = {
+          ip: req.clientInfo.ipAddress,
+          device: req.clientInfo.device,
+          browser: req.clientInfo.browser,
+          os: req.clientInfo.os,
+          referrer: req.headers["referer"] || null,
+     };
+
+     const longUrl = await LinkServices.VerifyLinkPasswordService(
+          q,
+          password,
+          clientInfo,
+     );
+
+     console.log(longUrl)
+
+     return res.status(200).json(
+          new ApiResponse(200, longUrl, "sending...")
+     )
 });
 
 const getUserStats = asyncHandler(async (req, res) => {
@@ -101,6 +133,17 @@ const getUserStats = asyncHandler(async (req, res) => {
      return res
           .status(200)
           .json(new ApiResponse(200, stats, "Stats fetched successfully"));
+});
+
+const editLink = asyncHandler(async (req, res) => {
+     const { password } = req.body;
+     const { id } = req.params;
+
+     await LinkServices.EditLinkService(password, id);
+
+     return res
+          .status(200)
+          .json(new ApiResponse(200, {}, "Link edited successfully"));
 });
 
 export default {
@@ -112,4 +155,6 @@ export default {
      getLinkAnalytics,
      redirectLink,
      getUserStats,
+     editLink,
+     verifyAndRedirect
 };
