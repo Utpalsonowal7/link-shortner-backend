@@ -1,18 +1,21 @@
 import { LinkServices } from "../services/index.js";
 import { asyncHandler } from "../utils/async_handler.js";
 import { ApiResponse } from "../utils/api_response.js";
+import { string } from "zod";
 
 const createLink = asyncHandler(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
-     console.log(link);
+
      const shortLink = `${process.env.BACK_END_URL}${link.shortCode}`;
+
+     const { longUrl } = link;
 
      return res
           .status(201)
           .json(
                new ApiResponse(
                     201,
-                    { ...link, shortLink },
+                    { longUrl, shortLink },
                     "Link created successfully",
                ),
           );
@@ -30,9 +33,12 @@ const getUserLinks = asyncHandler(async (req, res) => {
 });
 
 const getLinkById = asyncHandler(async (req, res) => {
+     const { range = "7" } = req.query;
+
      const link = await LinkServices.GetLinkByIdService(
           req.params.id,
           req.user.id,
+          range,
      );
 
      return res
@@ -80,30 +86,35 @@ const getLinkAnalytics = asyncHandler(async (req, res) => {
 const redirectLink = asyncHandler(async (req, res) => {
      const { shortCode } = req.params;
 
-     const clientInfo = {
-          ip: req.clientInfo.ipAddress,
-          device: req.clientInfo.device,
-          browser: req.clientInfo.browser,
-          os: req.clientInfo.os,
-          referrer: req.headers["referer"] || null,
-     };
+     try {
+          const clientInfo = {
+               ip: req.clientInfo.ipAddress,
+               device: req.clientInfo.device,
+               browser: req.clientInfo.browser,
+               os: req.clientInfo.os,
+               referrer: req.headers["referer"] || null,
+          };
 
-     const longUrl = await LinkServices.ResolveAndTrackService(
-          shortCode,
-          clientInfo,
-     );
-
-     if (!longUrl) {
-          return res.redirect(
-               `http://localhost:5173/protectedlink?q=${shortCode}`,
+          const longUrl = await LinkServices.ResolveAndTrackService(
+               shortCode,
+               clientInfo,
           );
-     }
 
-     return res.redirect(longUrl);
+          if (!longUrl) {
+               return res.redirect(
+                    `http://localhost:5173/protectedlink?q=${shortCode}`,
+               );
+          }
+
+          return res.redirect(longUrl);
+     } catch (error) {
+          if (error.message === "This link has expired") {
+               return res.redirect(`${process.env.FRONTEND_URL}/link-expired`);
+          }
+     }
 });
 
 const verifyAndRedirect = asyncHandler(async (req, res) => {
-   
      const { q, password } = req.body;
 
      const clientInfo = {
@@ -120,11 +131,9 @@ const verifyAndRedirect = asyncHandler(async (req, res) => {
           clientInfo,
      );
 
-     console.log(longUrl)
+     console.log(longUrl);
 
-     return res.status(200).json(
-          new ApiResponse(200, longUrl, "sending...")
-     )
+     return res.status(200).json(new ApiResponse(200, longUrl, "sending..."));
 });
 
 const getUserStats = asyncHandler(async (req, res) => {
@@ -146,6 +155,43 @@ const editLink = asyncHandler(async (req, res) => {
           .json(new ApiResponse(200, {}, "Link edited successfully"));
 });
 
+const homeData = asyncHandler(async (req, res) => {
+     console.log(req.user);
+
+     const data = await LinkServices.HomePageDataService(req.user.id);
+
+     return res
+          .status(200)
+          .json(new ApiResponse(200, { data }, "Data fetch successfully"));
+});
+
+const userLinks = asyncHandler(async (req, res) => {
+     const links = await LinkServices.UserLinksServices(req.user.id);
+
+     return res
+          .status(200)
+          .json(new ApiResponse(200, { links }, "Links Fetched Successfully"));
+});
+
+const overallAnalytics = asyncHandler(async (req, res) => {
+     const { range = "7" } = req.query;
+
+     const analytcs = await LinkServices.OverAllAnalyticsService(
+          req.user.id,
+          range,
+     );
+
+     return res
+          .status(200)
+          .json(
+               new ApiResponse(
+                    200,
+                    { analytcs },
+                    "Analytics Fetched Successfully",
+               ),
+          );
+});
+
 export default {
      createLink,
      getUserLinks,
@@ -156,5 +202,8 @@ export default {
      redirectLink,
      getUserStats,
      editLink,
-     verifyAndRedirect
+     verifyAndRedirect,
+     homeData,
+     userLinks,
+     overallAnalytics,
 };

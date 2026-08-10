@@ -17,14 +17,19 @@ router
 
 router.route("/verify").post(linkController.verifyAndRedirect);
 
-router.route("/:id").post(verifyJWT, linkController.editLink);
-
+router.route("/home-data").get(verifyJWT, linkController.homeData);
+router.route("/user-links").get(verifyJWT, linkController.userLinks);
 router.route("/stats").get(verifyJWT, linkController.getUserStats);
+router.route("/overall-analytcs").get(verifyJWT, linkController.overallAnalytics);
+
+router.route("/:id").post(verifyJWT, linkController.editLink);
 
 router
      .route("/:id")
      .get(verifyJWT, linkController.getLinkById)
      .delete(verifyJWT, linkController.deleteLink);
+
+
 
 router.route("/:id/analytics").get(verifyJWT, linkController.getLinkAnalytics);
 

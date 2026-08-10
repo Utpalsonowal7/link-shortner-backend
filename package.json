@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-      "postinstall": "prisma generate"
+    "postinstall": "prisma generate"
   },
   "author": "Utpal Sonowal",
   "license": "ISC",
@@ -31,6 +31,7 @@
     "ioredis": "^5.11.1",
     "ip-geolocation-api-javascript-sdk": "^3.0.1",
     "jsonwebtoken": "^9.0.3",
+    "link-preview-js": "^5.0.0",
     "mailgen": "^2.0.34",
     "morgan": "^1.11.0",
     "nanoid": "^5.1.16",
