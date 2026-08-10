@@ -131,7 +131,7 @@ const verifyAndRedirect = asyncHandler(async (req, res) => {
           clientInfo,
      );
 
-     console.log(longUrl);
+   
 
      return res.status(200).json(new ApiResponse(200, longUrl, "sending..."));
 });
@@ -156,8 +156,7 @@ const editLink = asyncHandler(async (req, res) => {
 });
 
 const homeData = asyncHandler(async (req, res) => {
-     console.log(req.user);
-
+    
      const data = await LinkServices.HomePageDataService(req.user.id);
 
      return res

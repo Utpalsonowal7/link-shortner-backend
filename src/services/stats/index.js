@@ -7,7 +7,7 @@ const getPublicStats = async () => {
           prisma.clickEvent.count(),
      ]);
 
-     console.log(totalClicks);
+ 
      return { totalUsers, totalLinks, totalClicks };
 };
 

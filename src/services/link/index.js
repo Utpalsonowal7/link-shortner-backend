@@ -122,7 +122,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
 };
 
 const verifyAndRedirect = async (shortCode, password, clientInfo) => {
-     console.log(shortCode);
+    
      const link = await prisma.link.findUnique({
           where: {
                shortCode: shortCode,
@@ -156,7 +156,7 @@ const verifyAndRedirect = async (shortCode, password, clientInfo) => {
 
 const trackClick = async (linkId, clientInfo) => {
      const { ip, referrer, device, browser, os } = clientInfo;
-     console.log(ip);
+     
      const geo = await getClientGeoInfo(ip);
 
      await prisma.$transaction([
@@ -1070,7 +1070,7 @@ const getLinkById = async (id, userId, range = "7") => {
       AND l."userId" = ${Number(userId)}
     LIMIT 1;
 `;
-     console.log(result);
+   
      const data = result[0];
 
      if (!data) {
@@ -1655,8 +1655,7 @@ const overallAnalytics = async (userId, range) => {
                "Start Creating Links to see your analytcs here",
           );
      }
-     console.log(result)
-     console.log(result[0]);
+ 
      return result[0];
 };
 
