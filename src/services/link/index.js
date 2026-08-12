@@ -86,17 +86,23 @@ const getUserLinks = async (userId, query = {}) => {
 // };
 
 const deleteLink = async (id, userId) => {
-     await getLinkById(id, userId);
-
      await prisma.link.delete({
-          where: { id: Number(id) },
+          where: { id: Number(id), userId: userId },
      });
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
-     const link = await prisma.link.findUnique({
-          where: { shortCode },
-     });
+    const dbStart = performance.now();
+
+    const link = await prisma.link.findUnique({
+         where: { shortCode },
+    });
+
+    if (process.env.DEBUG_PERFORMANCE === "true") {
+         console.log(
+              `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
+         );
+    }
 
      if (!link) {
           throw new ApiError(404, "Link not found");
@@ -122,7 +128,6 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
 };
 
 const verifyAndRedirect = async (shortCode, password, clientInfo) => {
-    
      const link = await prisma.link.findUnique({
           where: {
                shortCode: shortCode,
@@ -156,7 +161,7 @@ const verifyAndRedirect = async (shortCode, password, clientInfo) => {
 
 const trackClick = async (linkId, clientInfo) => {
      const { ip, referrer, device, browser, os } = clientInfo;
-     
+
      const geo = await getClientGeoInfo(ip);
 
      await prisma.$transaction([
@@ -1070,7 +1075,7 @@ const getLinkById = async (id, userId, range = "7") => {
       AND l."userId" = ${Number(userId)}
     LIMIT 1;
 `;
-   
+
      const data = result[0];
 
      if (!data) {
@@ -1186,7 +1191,7 @@ const overallAnalytics = async (userId, range) => {
           startDate.setDate(startDate.getDate() - 30);
      }
 
-  const result = await prisma.$queryRaw`
+     const result = await prisma.$queryRaw`
     SELECT
 
         (
@@ -1655,7 +1660,7 @@ const overallAnalytics = async (userId, range) => {
                "Start Creating Links to see your analytcs here",
           );
      }
- 
+
      return result[0];
 };
 
