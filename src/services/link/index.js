@@ -92,6 +92,7 @@ const deleteLink = async (id, userId) => {
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
+     console.log("Starting of mesauring✅✅");
     const dbStart = performance.now();
 
     const link = await prisma.link.findUnique({
