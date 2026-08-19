@@ -2,8 +2,11 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const uploadDir = path.join(process.cwd(), "public", "images");
-
+const uploadDir =
+     process.env.NODE_ENV === "production"
+          ? "/tmp"
+          : path.join(process.cwd(), "public", "images");
+          
 if (!fs.existsSync(uploadDir)) {
      fs.mkdirSync(uploadDir, { recursive: true });
 }
