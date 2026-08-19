@@ -165,7 +165,7 @@ const homeData = asyncHandler(async (req, res) => {
 
 const userLinks = asyncHandler(async (req, res) => {
      const links = await LinkServices.UserLinksServices(req.user.id);
-
+console.log(links)
      return res
           .status(200)
           .json(new ApiResponse(200, { links }, "Links Fetched Successfully"));
