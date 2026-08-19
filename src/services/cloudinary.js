@@ -13,6 +13,24 @@ export const cloudUpload = async (localFilePath) => {
           if (!localFilePath) {
                throw new ApiError(400, "Server file not found!");
           }
+
+          console.log("localFilePath:", localFilePath);
+          console.log(
+               "file exists before cloud upload:",
+               fs.existsSync(localFilePath),
+          );
+          console.log(
+               "cloud name exists:",
+               Boolean(process.env.CLOUDNARY_CLOUD_NAME),
+          );
+          console.log(
+               "api key exists:",
+               Boolean(process.env.CLOUDNARY_API_KEY),
+          );
+          console.log(
+               "api secret exists:",
+               Boolean(process.env.CLOUDNARY_API_SECRET),
+          );
           const uploadResult = await cloudinary.uploader.upload(localFilePath, {
                resource_type: "auto",
           });
