@@ -13,6 +13,7 @@ const app = express();
 app.set("trust proxy", true);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ limit: "16kb", extended: true }));
+app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use(
@@ -46,7 +47,7 @@ app.use(clientDetails);
 import healthCheckRoute from "./routes/healthCheck.route.js";
 import authRoute from "./routes/auth.routes.js";
 import linkRoutes, { redirectRouterExport } from "./routes/link.routes.js";
-import qrRoutes from "./routes/qr.routes.js"
+import qrRoutes from "./routes/qr.routes.js";
 import statsRouter from "./routes/stats.route.js";
 
 app.use("/api/v1/auth", authRoute);
