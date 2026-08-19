@@ -130,8 +130,6 @@ const verifyAndRedirect = asyncHandler(async (req, res) => {
           clientInfo,
      );
 
-   
-
      return res.status(200).json(new ApiResponse(200, longUrl, "sending..."));
 });
 
@@ -155,7 +153,6 @@ const editLink = asyncHandler(async (req, res) => {
 });
 
 const homeData = asyncHandler(async (req, res) => {
-    
      const data = await LinkServices.HomePageDataService(req.user.id);
 
      return res
@@ -165,10 +162,18 @@ const homeData = asyncHandler(async (req, res) => {
 
 const userLinks = asyncHandler(async (req, res) => {
      const links = await LinkServices.UserLinksServices(req.user.id);
-console.log(links)
+     console.log(links);
      return res
           .status(200)
           .json(new ApiResponse(200, { links }, "Links Fetched Successfully"));
+});
+
+const userQr = asyncHandler(async (req, res) => {
+     const qr = await LinkServices.UserQrServices(req.user.id);
+console.log(qr)
+     return res
+          .status(200)
+          .json(new ApiResponse(200, { qr }, "Links Fetched Successfully"));
 });
 
 const overallAnalytics = asyncHandler(async (req, res) => {
@@ -204,4 +209,5 @@ export default {
      homeData,
      userLinks,
      overallAnalytics,
+     userQr,
 };

@@ -93,17 +93,17 @@ const deleteLink = async (id, userId) => {
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
      console.log("Starting of mesauring✅✅");
-    const dbStart = performance.now();
+     const dbStart = performance.now();
 
-    const link = await prisma.link.findUnique({
-         where: { shortCode },
-    });
+     const link = await prisma.link.findUnique({
+          where: { shortCode },
+     });
 
-    if (process.env.DEBUG_PERFORMANCE === "true") {
-         console.log(
-              `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
-         );
-    }
+     if (process.env.DEBUG_PERFORMANCE === "true") {
+          console.log(
+               `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
+          );
+     }
 
      if (!link) {
           throw new ApiError(404, "Link not found");
@@ -734,7 +734,7 @@ const homePageData = async (userId) => {
 
      const kpiData = [
           new KpiCard(1, "Today's Clicks", todayClicks, yesterdayClicks),
-          new KpiCard(2, "Links Created", todayLinks, yesterdayLinks),
+          new KpiCard(2, "Links/Qr Created", todayLinks, yesterdayLinks),
           new KpiCard(
                3,
                "Unique Visitors",
@@ -783,6 +783,7 @@ const getLinksUser = async (userId) => {
      const links = await prisma.link.findMany({
           where: {
                userId: userId,
+               qrUrl: null,
           },
           select: {
                id: true,
@@ -801,8 +802,54 @@ const getLinksUser = async (userId) => {
           shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
      }));
 
+     console.log(links);
+
      return {
           links: linkFormatter,
+     };
+};
+
+const getUserQr = async (userId) => {
+     const links = await prisma.link.findMany({
+          where: {
+               userId: userId,
+               qrUrl: {
+                    not: null,
+               },
+          },
+          select: {
+               id: true,
+               shortCode: true,
+               longUrl: true,
+               title: true,
+               qrUrl: true,
+          },
+          take: 150,
+     });
+
+     const linkFormatter = links.map((l) => {
+          let hostname = "Unknown";
+
+          if (l.longUrl) {
+               try {
+                    hostname = new URL(l.longUrl).hostname.replace(
+                         /^www\./,
+                         "",
+                    );
+               } catch {
+                    hostname = "Unknown";
+               }
+          }
+
+          return {
+               ...l,
+               title: l.title || `${hostname} - Untitled`,
+               shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
+          };
+     });
+
+     return {
+          qr: linkFormatter,
      };
 };
 
@@ -1693,5 +1740,6 @@ export default {
      VerifyLinkPasswordService: verifyAndRedirect,
      HomePageDataService: homePageData,
      UserLinksServices: getLinksUser,
+     UserQrServices: getUserQr,
      OverAllAnalyticsService: overallAnalytics,
 };
