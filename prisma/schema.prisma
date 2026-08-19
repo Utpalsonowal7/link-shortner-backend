@@ -56,6 +56,7 @@ model Link {
   shortCode String  @unique
   longUrl   String
   title     String?
+  qrUrl     String?
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -75,6 +76,7 @@ model Link {
 
   @@index([userId])
   @@index([shortCode])
+  @@index([qrUrl])
   @@map("links")
 }
 

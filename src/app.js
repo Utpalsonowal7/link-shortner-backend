@@ -46,10 +46,12 @@ app.use(clientDetails);
 import healthCheckRoute from "./routes/healthCheck.route.js";
 import authRoute from "./routes/auth.routes.js";
 import linkRoutes, { redirectRouterExport } from "./routes/link.routes.js";
+import qrRoutes from "./routes/qr.routes.js"
 import statsRouter from "./routes/stats.route.js";
 
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/links", linkRoutes);
+app.use("/api/v1/qr", qrRoutes);
 app.use("/api/v1/stats", statsRouter);
 app.use("/", healthCheckRoute);
 app.use("/", redirectRouterExport);
