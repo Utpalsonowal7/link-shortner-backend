@@ -145,9 +145,9 @@ const refreshAccessToken = async (incomingRefreshToken) => {
      if (!incomingRefreshToken) {
           throw new ApiError(401, "Unauthorized refresh token");
      }
-console.log(incomingRefreshToken)
+
      const hashRefreshToken = hashToken(incomingRefreshToken);
-console.log(hashToken)
+
      const session = await prisma.session.findUnique({
           where: {
                refreshToken: hashRefreshToken,
@@ -162,7 +162,7 @@ console.log(hashToken)
                },
           },
      });
-console.log(session)
+
      if (!session) {
           throw new ApiError(401, "Invalid refresh token");
      }
@@ -295,7 +295,7 @@ const forgetPasswordService = async (data) => {
 };
 
 const resetPasswordService = async (data) => {
-     console.log(data);
+    
      const { email, otp, password } = data;
 
      const storedHash = await client.get(otpKey(email));

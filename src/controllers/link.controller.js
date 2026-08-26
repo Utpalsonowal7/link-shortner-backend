@@ -162,7 +162,7 @@ const homeData = asyncHandler(async (req, res) => {
 
 const userLinks = asyncHandler(async (req, res) => {
      const links = await LinkServices.UserLinksServices(req.user.id);
-     console.log(links);
+     
      return res
           .status(200)
           .json(new ApiResponse(200, { links }, "Links Fetched Successfully"));
@@ -170,7 +170,7 @@ const userLinks = asyncHandler(async (req, res) => {
 
 const userQr = asyncHandler(async (req, res) => {
      const qr = await LinkServices.UserQrServices(req.user.id);
-console.log(qr)
+
      return res
           .status(200)
           .json(new ApiResponse(200, { qr }, "Links Fetched Successfully"));

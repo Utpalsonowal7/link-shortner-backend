@@ -6,7 +6,8 @@ export const errHandler = (err, req, res, next) => {
 
      if (!(error instanceof ApiError)) {
           let statusCode = error.statusCode || 500;
-          let message = error.message || "Something went wrong";
+          let message =
+               error?.message || error?.description || "Something went wrong";
 
           if (error instanceof PrismaClientKnownRequestError) {
                statusCode = 400;
@@ -25,7 +26,7 @@ export const errHandler = (err, req, res, next) => {
           );
      }
 
-     console.log(error);
+     // console.log(error);
 
      const response = {
           ...error,

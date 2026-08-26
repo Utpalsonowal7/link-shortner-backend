@@ -11,10 +11,10 @@ if (!fs.existsSync(uploadDir)) {
      fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("cwd:", process.cwd());
-console.log("uploadDir:", uploadDir);
-console.log("uploadDir exists:", fs.existsSync(uploadDir));
+// console.log("NODE_ENV:", process.env.NODE_ENV);
+// console.log("cwd:", process.cwd());
+// console.log("uploadDir:", uploadDir);
+// console.log("uploadDir exists:", fs.existsSync(uploadDir));
 
 const storage = multer.diskStorage({
      destination: (_req, _file, cb) => {

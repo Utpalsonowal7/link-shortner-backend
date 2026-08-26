@@ -49,6 +49,7 @@ import authRoute from "./routes/auth.routes.js";
 import linkRoutes, { redirectRouterExport } from "./routes/link.routes.js";
 import qrRoutes from "./routes/qr.routes.js";
 import statsRouter from "./routes/stats.route.js";
+import paymentRouter from "./routes/payment.routes.js";
 import { apiRouter, redirectRouter } from "./routes/temp.routes.js";
 
 app.use("/api/v1/auth", authRoute);
@@ -56,6 +57,7 @@ app.use("/api/v1/links", linkRoutes);
 app.use("/api/v1/qr", qrRoutes);
 app.use("/api/v1/stats", statsRouter);
 app.use("/api/v1/temp", apiRouter);
+app.use("/api/v1/order", paymentRouter);
 app.use("/", healthCheckRoute);
 app.use("/", redirectRouterExport);
 app.use("/", redirectRouter);

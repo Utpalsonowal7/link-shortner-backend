@@ -92,7 +92,7 @@ const deleteLink = async (id, userId) => {
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
-     console.log("Starting of mesauring✅✅");
+     // console.log("Starting of mesauring✅✅");
      const dbStart = performance.now();
 
      const link = await prisma.link.findUnique({
@@ -802,7 +802,7 @@ const getLinksUser = async (userId) => {
           shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
      }));
 
-     console.log(links);
+    
 
      return {
           links: linkFormatter,
