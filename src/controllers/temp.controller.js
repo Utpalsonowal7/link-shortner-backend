@@ -3,9 +3,11 @@ import { ApiResponse } from "../utils/api_response.js";
 import { asyncHandler } from "../utils/async_handler.js";
 
 const tempUrl = asyncHandler(async (req, res) => {
-     const { longUrl, shortCode } = req.body;
+     
+     const { longUrl, customCode } = req.body;
+    
 
-     const rel = await TempService.TempUrlService(longUrl, shortCode);
+     const rel = await TempService.TempUrlService(longUrl, customCode);
 
      return res
           .status(201)
@@ -13,7 +15,7 @@ const tempUrl = asyncHandler(async (req, res) => {
                new ApiResponse(
                     201,
                     { rel },
-                    "temp link ceated and will expired after a hour",
+                    "Temp link ceated and will expired after 5 min",
                ),
           );
 });

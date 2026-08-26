@@ -5,7 +5,7 @@ import { generateUniqueShortCode } from "../link/uniqueCode.js";
 const storeTempUrl = async (link, code) => {
      const shortCode = code ? code : await generateUniqueShortCode();
 
-     await client.setex(shortCode, 3, link);
+     await client.setex(shortCode, 300, link);
      const shortUrl = `${process.env.BACK_END_URL?.replace(/\/$/, "")}/temp/${shortCode}`;
 
      return shortUrl;
@@ -13,7 +13,7 @@ const storeTempUrl = async (link, code) => {
 
 const getAndRedirect = async (shortCode) => {
      const res = await client.get(shortCode);
-console.log(res)
+
      return res;
 };
 
