@@ -32,6 +32,7 @@ model User {
 
   sessions Session[]
   links    Link[]
+  domains  Domain[]
 
   @@map("users")
 }
@@ -60,6 +61,9 @@ model Link {
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  domainId Int?
+  domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Cascade)
 
   password              String?
   is_password_protected Boolean @default(false)
@@ -107,7 +111,6 @@ model ClickEvent {
   @@map("click_events")
 }
 
-
 model Donation {
   id Int @id @default(autoincrement())
 
@@ -136,4 +139,24 @@ enum DonationStatus {
   SUCCESS
   FAILED
   REFUNDED
+}
+
+model Domain {
+  id     Int    @id @default(autoincrement())
+  domain String @unique
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isVerified        Boolean   @default(false)
+  verificationToken String    @unique
+  verifiedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  links Link[]
+
+  @@index([userId])
+  @@map("domains")
 }
