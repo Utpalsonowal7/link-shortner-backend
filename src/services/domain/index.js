@@ -6,7 +6,7 @@ const generateVerificationToken = () => {
      return `utpx_verify_${crypto.randomBytes(24).toString("hex")}`;
 };
 
-export const createDomain = async (userId, domain) => {
+const createDomain = async (userId, domain) => {
      const cleanDomain = domain
           .trim()
           .toLowerCase()
@@ -60,8 +60,7 @@ export const createDomain = async (userId, domain) => {
      };
 };
 
-
-export const getUserDomains = async (userId) => {
+const getUserDomains = async (userId) => {
      return await prisma.domain.findMany({
           where: {
                userId,
@@ -80,7 +79,7 @@ export const getUserDomains = async (userId) => {
      });
 };
 
-export const getDomainById = async (userId, domainId) => {
+const getDomainById = async (userId, domainId) => {
      const domain = await prisma.domain.findFirst({
           where: {
                id: domainId,
@@ -97,14 +96,13 @@ export const getDomainById = async (userId, domainId) => {
      });
 
      if (!domain) {
-          throw new Error("Domain not found");
+          throw new ApiError(404, "Domain not found");
      }
 
      return domain;
 };
 
-
-export const deleteDomain = async (userId, domainId) => {
+const deleteDomain = async (userId, domainId) => {
      const domain = await prisma.domain.findFirst({
           where: {
                id: domainId,
@@ -113,7 +111,7 @@ export const deleteDomain = async (userId, domainId) => {
      });
 
      if (!domain) {
-          throw new Error("Domain not found");
+          throw new ApiError(404, "Domain not found");
      }
 
      await prisma.domain.delete({
@@ -125,4 +123,11 @@ export const deleteDomain = async (userId, domainId) => {
      return {
           message: "Domain deleted successfully",
      };
+};
+
+export default {
+     CreateDomainService: createDomain,
+     GetDomainUser: getUserDomains,
+     GetDomainByIf: getDomainById,
+     DeleteDomain: deleteDomain,
 };
