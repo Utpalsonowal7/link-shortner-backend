@@ -92,7 +92,7 @@ const getUserDomains = async (userId) => {
           createdAt: d.createdAt,
      }));
 
-     console.log(domainFormat[0])
+     
      return { domainFormat };
 };
 
