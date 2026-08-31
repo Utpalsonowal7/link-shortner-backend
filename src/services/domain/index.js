@@ -37,21 +37,17 @@ const createDomain = async (userId, domain) => {
           },
      });
 
+     const domainName = newDomain.domain.split(".")[0] || newDomain.domain;
+
      return {
           id: newDomain.id,
           domain: newDomain.domain,
           isVerified: newDomain.isVerified,
 
           dns: {
-               verification: {
-                    type: "TXT",
-                    name: "_utpx",
-                    value: verificationToken,
-               },
-
                routing: {
                     type: "CNAME",
-                    name: "@",
+                    name: domainName,
                     value: process.env.CUSTOM_DOMAIN_TARGET,
                },
           },
@@ -61,7 +57,7 @@ const createDomain = async (userId, domain) => {
 };
 
 const getUserDomains = async (userId) => {
-     return await prisma.domain.findMany({
+     const res = await prisma.domain.findMany({
           where: {
                userId,
           },
@@ -77,6 +73,27 @@ const getUserDomains = async (userId) => {
                updatedAt: true,
           },
      });
+     // console.log(res[0].domain)
+     // const domainName = res.domain.split(".")[0] || res.domain;
+
+     const domainFormat = res.map((d) => ({
+          id: d.id,
+          domain: d.domain,
+          isVerified: d.isVerified,
+
+          dns: {
+               routing: {
+                    type: "CNAME",
+                    name: d.domain.split(".")[0] || d.domain,
+                    value: process.env.CUSTOM_DOMAIN_TARGET,
+               },
+          },
+
+          createdAt: d.createdAt,
+     }));
+
+     console.log(domainFormat[0])
+     return { domainFormat };
 };
 
 const getDomainById = async (userId, domainId) => {
