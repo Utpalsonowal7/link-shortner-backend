@@ -44,6 +44,15 @@ app.use(
 
 app.use(clientDetails);
 
+app.get("/", (req, res) => {
+     console.log("Host:", req.hostname);
+
+     return res.json({
+          message: "Custom domain reached UTPX server",
+          host: req.hostname,
+     });
+});
+
 import healthCheckRoute from "./routes/healthCheck.route.js";
 import authRoute from "./routes/auth.routes.js";
 import linkRoutes, { redirectRouterExport } from "./routes/link.routes.js";
