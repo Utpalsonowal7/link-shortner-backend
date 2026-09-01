@@ -68,6 +68,12 @@ model Link {
   password              String?
   is_password_protected Boolean @default(false)
 
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   expiresAt DateTime?
@@ -104,6 +110,12 @@ model ClickEvent {
   os      String?
 
   referrer String?
+
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
 
   @@index([linkId])
   @@index([timestamp])

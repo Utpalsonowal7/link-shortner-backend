@@ -7,7 +7,18 @@ import { ApiResponse } from "../../utils/api_response.js";
 import { KpiCard } from "../../utils/kpiCard.js";
 
 const createLink = async (data, userId) => {
-     const { longUrl, title, tags, customCode, pass } = data;
+     const {
+          longUrl,
+          title,
+          tags,
+          customCode,
+          pass,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmTerm,
+          utmContent
+     } = data;
 
      const shortCode = customCode
           ? customCode
@@ -24,6 +35,11 @@ const createLink = async (data, userId) => {
                tags: tags ?? [],
                userId,
                password,
+               utmSource,
+               utmMedium,
+               utmCampaign,
+               utmTerm,
+               utmContent,
           },
           select: {
                shortCode: true,
@@ -801,8 +817,6 @@ const getLinksUser = async (userId) => {
                `${new URL(l.longUrl).hostname.replace(/^www\./, "")} - Untitled`,
           shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
      }));
-
-    
 
      return {
           links: linkFormatter,
