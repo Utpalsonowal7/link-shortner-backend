@@ -102,7 +102,7 @@ const redirectLink = asyncHandler(async (req, res) => {
 
           if (!longUrl) {
                return res.redirect(
-                    `http://localhost:5173/protectedlink?q=${shortCode}`,
+                    `${process.env.FRONTEND_URL}/protectedlink?q=${shortCode}`,
                );
           }
 

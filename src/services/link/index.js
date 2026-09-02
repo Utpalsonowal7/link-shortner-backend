@@ -36,6 +36,7 @@ const createLink = async (data, userId) => {
                tags: tags ?? [],
                userId,
                password: pass,
+               is_password_protected: !!pass,
                utmSource,
                utmMedium,
                utmCampaign,
@@ -114,7 +115,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
-
+     console.log(link);
      if (process.env.DEBUG_PERFORMANCE === "true") {
           console.log(
                `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
@@ -134,6 +135,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
      }
 
      if (link.is_password_protected) {
+          console.log("sadsajdgs");
           return;
      }
 
