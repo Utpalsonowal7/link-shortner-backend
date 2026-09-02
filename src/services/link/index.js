@@ -12,7 +12,8 @@ const createLink = async (data, userId) => {
           title,
           tags,
           customCode,
-          pass,
+          password,
+          expiresAt,
           utmSource,
           utmMedium,
           utmCampaign,
@@ -24,17 +25,17 @@ const createLink = async (data, userId) => {
           ? customCode
           : await generateUniqueShortCode();
 
-     const password = pass ? await bcrypt.hash(pass, 10) : null;
+     const pass = password ? await bcrypt.hash(password, 10) : null;
 
      const link = await prisma.link.create({
           data: {
                shortCode,
                longUrl,
                title: title ?? null,
-               expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+               expiresAt: expiresAt ?? null,
                tags: tags ?? [],
                userId,
-               password,
+               password: pass,
                utmSource,
                utmMedium,
                utmCampaign,

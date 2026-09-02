@@ -2,7 +2,9 @@ import { ApiError } from "../utils/api_error.js";
 import { ZodError } from "zod";
 
 export const validate = (schema, props = "body") => {
+    
      return async (req, res, next) => {
+          
           try {
                const data = await schema.parseAsync(req[props]);
                if (props === "body") {

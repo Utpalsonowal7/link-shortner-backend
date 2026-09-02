@@ -46,6 +46,8 @@ const createLinkSchema = z.object({
           .max(100)
           .optional(),
 
+     expiresAt: z.string().optional(),
+
      utmSource: z.string().trim().max(100).optional(),
      utmMedium: z.string().trim().max(100).optional(),
      utmCampaign: z.string().trim().max(150).optional(),
