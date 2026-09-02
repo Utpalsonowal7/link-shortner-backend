@@ -17,7 +17,7 @@ const createLink = async (data, userId) => {
           utmMedium,
           utmCampaign,
           utmTerm,
-          utmContent
+          utmContent,
      } = data;
 
      const shortCode = customCode
@@ -50,40 +50,40 @@ const createLink = async (data, userId) => {
      return link;
 };
 
-const getUserLinks = async (userId, query = {}) => {
-     const { page = 1, limit = 20, search } = query;
+// const getUserLinks = async (userId, query = {}) => {
+//      const { page = 1, limit = 20, search } = query;
 
-     const where = {
-          userId,
-          ...(search && {
-               OR: [
-                    { title: { contains: search, mode: "insensitive" } },
-                    { shortCode: { contains: search, mode: "insensitive" } },
-                    { longUrl: { contains: search, mode: "insensitive" } },
-               ],
-          }),
-     };
+//      const where = {
+//           userId,
+//           ...(search && {
+//                OR: [
+//                     { title: { contains: search, mode: "insensitive" } },
+//                     { shortCode: { contains: search, mode: "insensitive" } },
+//                     { longUrl: { contains: search, mode: "insensitive" } },
+//                ],
+//           }),
+//      };
 
-     const [links, total] = await Promise.all([
-          prisma.link.findMany({
-               where,
-               orderBy: { createdAt: "desc" },
-               skip: (page - 1) * limit,
-               take: Number(limit),
-          }),
-          prisma.link.count({ where }),
-     ]);
+//      const [links, total] = await Promise.all([
+//           prisma.link.findMany({
+//                where,
+//                orderBy: { createdAt: "desc" },
+//                skip: (page - 1) * limit,
+//                take: Number(limit),
+//           }),
+//           prisma.link.count({ where }),
+//      ]);
 
-     return {
-          links,
-          pagination: {
-               total,
-               page: Number(page),
-               limit: Number(limit),
-               totalPages: Math.ceil(total / limit),
-          },
-     };
-};
+//      return {
+//           links,
+//           pagination: {
+//                total,
+//                page: Number(page),
+//                limit: Number(limit),
+//                totalPages: Math.ceil(total / limit),
+//           },
+//      };
+// };
 
 // const getLinkById = async (id, userId) => {
 //      const link = await prisma.link.findUnique({
@@ -108,7 +108,6 @@ const deleteLink = async (id, userId) => {
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
-     // console.log("Starting of mesauring✅✅");
      const dbStart = performance.now();
 
      const link = await prisma.link.findUnique({
@@ -137,11 +136,32 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
           return;
      }
 
-     trackClick(link.id, clientInfo).catch((err) => {
+     trackClick(
+          link.id,
+          clientInfo,
+          link.utmSource,
+          link.utmMedium,
+          link.utmCampaign,
+     ).catch((err) => {
           console.error("Click tracking failed:", err.message);
      });
 
-     return link.longUrl;
+     const buildLongUrlWithUtm = (link) => {
+          const url = new URL(link.longUrl);
+
+          if (link.utmSource)
+               url.searchParams.set("utm_source", link.utmSource);
+          if (link.utmMedium)
+               url.searchParams.set("utm_medium", link.utmMedium);
+          if (link.utmCampaign)
+               url.searchParams.set("utm_campaign", link.utmCampaign);
+
+          return url.toString();
+     };
+
+     const longUrl = buildLongUrlWithUtm(link);
+
+     return longUrl;
 };
 
 const verifyAndRedirect = async (shortCode, password, clientInfo) => {
@@ -176,7 +196,14 @@ const verifyAndRedirect = async (shortCode, password, clientInfo) => {
      return link.longUrl;
 };
 
-const trackClick = async (linkId, clientInfo) => {
+const trackClick = async (
+     linkId,
+     clientInfo,
+     utmSource,
+     utmMedium,
+     utmCampaign,
+     utmContent,
+) => {
      const { ip, referrer, device, browser, os } = clientInfo;
 
      const geo = await getClientGeoInfo(ip);
@@ -190,6 +217,10 @@ const trackClick = async (linkId, clientInfo) => {
                     device: device ?? null,
                     browser: browser ?? null,
                     os: os ?? null,
+                    utmSource,
+                    utmMedium,
+                    utmCampaign,
+                    utmContent,
                     ...geo,
                },
           }),
@@ -807,6 +838,7 @@ const getLinksUser = async (userId) => {
                longUrl: true,
                title: true,
           },
+          orderBy: { createdAt: "desc" },
           take: 150,
      });
 
@@ -1744,7 +1776,7 @@ const editLink = async (password, id) => {
 
 export default {
      CreateLinkService: createLink,
-     GetUserLinksService: getUserLinks,
+     // GetUserLinksService: getUserLinks,
      GetLinkByIdService: getLinkById,
      DeleteLinkService: deleteLink,
      ResolveAndTrackService: resolveAndTrack,
