@@ -115,7 +115,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
-     console.log(link);
+     
      if (process.env.DEBUG_PERFORMANCE === "true") {
           console.log(
                `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
