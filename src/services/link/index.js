@@ -135,10 +135,8 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
      }
 
      if (link.is_password_protected) {
-          console.log("sadsajdgs");
           return;
      }
-     console.log(clientInfo)
 
      trackClick(
           link.id,
@@ -935,13 +933,6 @@ const getLinkById = async (id, userId, range = "7") => {
           throw new ApiError(400, "Invalid analytics range");
      }
 
-     console.log({
-          id,
-          userId,
-          startDate,
-          idNumber: Number(id),
-          userIdNumber: Number(userId),
-     });
      const result = await prisma.$queryRaw`
     SELECT
         l.id,

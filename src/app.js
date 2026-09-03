@@ -45,7 +45,6 @@ app.use(
 app.use(clientDetails);
 
 app.get("/", (req, res) => {
-     console.log("Host:", req.hostname);
 
      return res.json({
           message: "Custom domain reached UTPX server",
