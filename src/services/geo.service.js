@@ -6,7 +6,8 @@ const client = new IpGeolocationClient({
 
 export const getClientGeoInfo = async (ip) => {
      try {
-          const geoData = await client.lookupIpGeolocation({ip: ip});
+          const geoData = await client.lookupIpGeolocation({ ip: ip });
+          console.log(geoData)
 
           return {
                continent: geoData.data.location.continentName,
