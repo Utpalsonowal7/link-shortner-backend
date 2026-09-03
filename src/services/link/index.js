@@ -138,6 +138,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
           console.log("sadsajdgs");
           return;
      }
+     console.log(clientInfo)
 
      trackClick(
           link.id,
