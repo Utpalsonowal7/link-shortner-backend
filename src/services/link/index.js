@@ -829,11 +829,23 @@ const homePageData = async (userId) => {
      };
 };
 
-const getLinksUser = async (userId) => {
+const getLinksUser = async (userId, search) => {
      const links = await prisma.link.findMany({
           where: {
                userId: userId,
                qrUrl: null,
+               ...(search && {
+                    OR: [
+                         { title: { contains: search, mode: "insensitive" } },
+                         {
+                              shortCode: {
+                                   contains: search,
+                                   mode: "insensitive",
+                              },
+                         },
+                         { longUrl: { contains: search, mode: "insensitive" } },
+                    ],
+               }),
           },
           select: {
                id: true,

@@ -3,7 +3,6 @@ import { asyncHandler } from "../utils/async_handler.js";
 import { ApiResponse } from "../utils/api_response.js";
 
 const createLink = asyncHandler(async (req, res) => {
-    
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
 
      const shortLink = `${process.env.BACK_END_URL}${link.shortCode}`;
@@ -162,8 +161,8 @@ const homeData = asyncHandler(async (req, res) => {
 });
 
 const userLinks = asyncHandler(async (req, res) => {
-     const links = await LinkServices.UserLinksServices(req.user.id);
-     
+     const links = await LinkServices.UserLinksServices(req.user.id, req.query.q);
+
      return res
           .status(200)
           .json(new ApiResponse(200, { links }, "Links Fetched Successfully"));
