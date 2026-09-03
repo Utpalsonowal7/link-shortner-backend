@@ -28,7 +28,7 @@ const createLinkSchema = z.object({
           .string()
           .trim()
           .min(3, "Custom code must be at least 3 characters")
-          .max(7, "Custom code must be under 7 characters")
+          .max(15, "Custom code must be under 15 characters")
           .regex(
                /^[a-zA-Z0-9-_]+$/,
                "Only letters, numbers, hyphens and underscores allowed",
