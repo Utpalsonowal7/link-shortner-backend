@@ -1,6 +1,7 @@
 import { LinkServices } from "../services/index.js";
 import { asyncHandler } from "../utils/async_handler.js";
 import { ApiResponse } from "../utils/api_response.js";
+import getClientIp from "../utils/getClientIP.js";
 
 const createLink = asyncHandler(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
@@ -83,6 +84,8 @@ const getLinkAnalytics = asyncHandler(async (req, res) => {
 });
 
 const redirectLink = asyncHandler(async (req, res) => {
+     const ip = getClientIp(req);
+     console.log(ip);
      const { shortCode } = req.params;
 
      try {
@@ -161,7 +164,10 @@ const homeData = asyncHandler(async (req, res) => {
 });
 
 const userLinks = asyncHandler(async (req, res) => {
-     const links = await LinkServices.UserLinksServices(req.user.id, req.query.q);
+     const links = await LinkServices.UserLinksServices(
+          req.user.id,
+          req.query.q,
+     );
 
      return res
           .status(200)
