@@ -164,6 +164,7 @@ const userLinks = asyncHandler(async (req, res) => {
      const links = await LinkServices.UserLinksServices(
           req.user.id,
           req.query.q,
+          req.query.cursor,
      );
 
      return res

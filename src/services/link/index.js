@@ -828,7 +828,7 @@ const homePageData = async (userId) => {
      };
 };
 
-const getLinksUser = async (userId, search) => {
+const getLinksUser = async (userId, search, cursor) => {
      const limit = 10;
 
      const links = await prisma.link.findMany({
@@ -859,7 +859,7 @@ const getLinksUser = async (userId, search) => {
 
           ...(cursor && {
                cursor: {
-                    id: cursor,
+                    id: Number(cursor),
                },
                skip: 1,
           }),
