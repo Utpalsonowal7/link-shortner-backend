@@ -115,7 +115,7 @@ const resolveAndTrack = async (shortCode, clientInfo) => {
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
-     
+
      if (process.env.DEBUG_PERFORMANCE === "true") {
           console.log(
                `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
@@ -829,6 +829,8 @@ const homePageData = async (userId) => {
 };
 
 const getLinksUser = async (userId, search) => {
+     const limit = 10;
+
      const links = await prisma.link.findMany({
           where: {
                userId: userId,
@@ -853,10 +855,20 @@ const getLinksUser = async (userId, search) => {
                title: true,
           },
           orderBy: { createdAt: "desc" },
-          take: 150,
+          take: limit + 1,
+
+          ...(cursor && {
+               cursor: {
+                    id: cursor,
+               },
+               skip: 1,
+          }),
      });
 
-     const linkFormatter = links.map((l) => ({
+     const hasNextPage = links.length > limit;
+     const result = hasNextPage ? links.slice(0, limit) : links;
+
+     const linkFormatter = result.map((l) => ({
           ...l,
           title:
                l.title ||
@@ -866,6 +878,10 @@ const getLinksUser = async (userId, search) => {
 
      return {
           links: linkFormatter,
+          pagination: {
+               hasNextPage,
+               nextCursor: hasNextPage ? result[result.length - 1].id : null,
+          },
      };
 };
 
