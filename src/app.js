@@ -7,6 +7,7 @@ import { client } from "./lib/redis.js";
 import { otpKey } from "./utils/otpKey.js";
 import { errHandler } from "./middlewares/errHandler.middleware.js";
 import { clientDetails } from "./middlewares/metaData.middleware.js";
+import { limiter } from "./middlewares/rateLimiter.middleware.js";
 
 const app = express();
 
@@ -43,6 +44,9 @@ app.use(
 );
 
 app.use(clientDetails);
+
+// Shared Redis-backed API limit; root short-link redirects stay outside this quota.
+app.use("/api/v1", limiter.apiLimiter);
 
 app.get("/", (req, res) => {
 
