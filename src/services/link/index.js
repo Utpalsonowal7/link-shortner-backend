@@ -52,56 +52,6 @@ const createLink = async (data, userId) => {
      return link;
 };
 
-// const getUserLinks = async (userId, query = {}) => {
-//      const { page = 1, limit = 20, search } = query;
-
-//      const where = {
-//           userId,
-//           ...(search && {
-//                OR: [
-//                     { title: { contains: search, mode: "insensitive" } },
-//                     { shortCode: { contains: search, mode: "insensitive" } },
-//                     { longUrl: { contains: search, mode: "insensitive" } },
-//                ],
-//           }),
-//      };
-
-//      const [links, total] = await Promise.all([
-//           prisma.link.findMany({
-//                where,
-//                orderBy: { createdAt: "desc" },
-//                skip: (page - 1) * limit,
-//                take: Number(limit),
-//           }),
-//           prisma.link.count({ where }),
-//      ]);
-
-//      return {
-//           links,
-//           pagination: {
-//                total,
-//                page: Number(page),
-//                limit: Number(limit),
-//                totalPages: Math.ceil(total / limit),
-//           },
-//      };
-// };
-
-// const getLinkById = async (id, userId) => {
-//      const link = await prisma.link.findUnique({
-//           where: { id: Number(id) },
-//      });
-
-//      if (!link) {
-//           throw new ApiError(404, "Link not found");
-//      }
-
-//      if (link.userId !== userId) {
-//           throw new ApiError(403, "You do not have access to this link");
-//      }
-
-//      return link;
-// };
 
 const deleteLink = async (id, userId) => {
      await prisma.link.delete({
