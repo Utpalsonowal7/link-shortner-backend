@@ -160,6 +160,7 @@ const trackClick = async (
                     device: device ?? null,
                     browser: browser ?? null,
                     os: os ?? null,
+                    agent: agent ?? null,
                     utmSource,
                     utmMedium,
                     utmCampaign,

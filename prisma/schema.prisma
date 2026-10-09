@@ -110,6 +110,7 @@ model ClickEvent {
   os      String?
 
   referrer String?
+  agent    String?
 
   utmSource   String?
   utmMedium   String?

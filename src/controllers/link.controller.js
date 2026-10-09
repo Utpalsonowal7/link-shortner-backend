@@ -2,8 +2,6 @@ import { LinkServices } from "../services/index.js";
 import { asyncHandler } from "../utils/async_handler.js";
 import { ApiResponse } from "../utils/api_response.js";
 
-
-
 const createLink = asyncHandler(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
 
@@ -85,7 +83,6 @@ const getLinkAnalytics = asyncHandler(async (req, res) => {
 });
 
 const redirectLink = asyncHandler(async (req, res) => {
-
      const { shortCode } = req.params;
 
      try {
@@ -95,7 +92,7 @@ const redirectLink = asyncHandler(async (req, res) => {
                browser: req.clientInfo.browser,
                os: req.clientInfo.os,
                referrer: req.headers["referer"] || null,
-               agent: req.clientInfo.agent || "unknown",
+               agent: req.clientInfo.agent,
           };
 
           const longUrl = await LinkServices.ResolveAndTrackService(
