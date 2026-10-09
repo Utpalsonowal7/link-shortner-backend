@@ -2,13 +2,14 @@ import { Router } from "express";
 import tempController from "../controllers/temp.controller.js";
 import { createLinkSchema } from "../validators/linkSchema.js";
 import { validate } from "../middlewares/validate.middleware.js";
+import { limiter } from "../middlewares/rateLimiter.middleware.js";
 
 const apiRouter = Router();
 const redirectRouter = Router();
 
 apiRouter
      .route("/create")
-     .post(validate(createLinkSchema), tempController.tempUrl);
+     .post(limiter.tempCreateLimiter, validate(createLinkSchema), tempController.tempUrl);
 
 redirectRouter.route("/temp/:shortCode").get(tempController.redirectUrl);
 
