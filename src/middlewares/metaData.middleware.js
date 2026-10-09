@@ -5,7 +5,7 @@ export const clientDetails = (req, res, next) => {
      const userAgent = req.get("user-agent") || "";
      const data = getClientInfo(userAgent);
      const ip = getClientIp(req);
-
+     console.log("user agent : ", userAgent)
      req.clientInfo = {
           ipAddress: ip,
           device: data.device,
