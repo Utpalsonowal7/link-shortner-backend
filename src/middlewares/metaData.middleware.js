@@ -11,7 +11,7 @@ export const clientDetails = (req, res, next) => {
           device: data.device,
           browser: data.browser,
           os: data.os,
-          userAgent,
+          agent: userAgent,
      };
 
      next();

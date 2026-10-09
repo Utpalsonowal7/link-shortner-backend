@@ -147,8 +147,8 @@ const trackClick = async (
      utmCampaign,
      utmContent,
 ) => {
-     const { ip, referrer, device, browser, os, userAgent } = clientInfo;
-     console.log(userAgent);
+     const { ip, referrer, device, browser, os, agent } = clientInfo;
+     console.log(agent);
      const geo = await getClientGeoInfo(ip);
 
      await prisma.$transaction([

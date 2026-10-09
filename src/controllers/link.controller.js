@@ -95,6 +95,7 @@ const redirectLink = asyncHandler(async (req, res) => {
                browser: req.clientInfo.browser,
                os: req.clientInfo.os,
                referrer: req.headers["referer"] || null,
+               agent: req.clientInfo.agent || "unknown",
           };
 
           const longUrl = await LinkServices.ResolveAndTrackService(
