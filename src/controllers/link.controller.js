@@ -94,6 +94,11 @@ const redirectLink = asyncHandler(async (req, res) => {
                device: req.clientInfo.device,
                browser: req.clientInfo.browser,
                os: req.clientInfo.os,
+               userAgent: req.clientInfo.userAgent,
+               isBot: req.clientInfo.isBot,
+               botName: req.clientInfo.botName,
+               botReason: req.clientInfo.botReason,
+               origin: req.clientInfo.origin,
                referrer: req.headers["referer"] || null,
           };
 
@@ -128,6 +133,11 @@ const verifyAndRedirect = asyncHandler(async (req, res) => {
           device: req.clientInfo.device,
           browser: req.clientInfo.browser,
           os: req.clientInfo.os,
+          userAgent: req.clientInfo.userAgent,
+          isBot: req.clientInfo.isBot,
+          botName: req.clientInfo.botName,
+          botReason: req.clientInfo.botReason,
+          origin: req.clientInfo.origin,
           referrer: req.headers["referer"] || null,
      };
 
