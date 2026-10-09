@@ -23,6 +23,7 @@ import {
 } from "../mailTemplate.js";
 import crypto from "crypto";
 
+
 const registerUser = async (data) => {
      const { name, email, password } = data;
 
@@ -374,3 +375,4 @@ export default {
      ResetPasswordService: resetPasswordService,
      ChangePasswordService: changePasswordService,
 };
+

@@ -2,6 +2,8 @@ import { LinkServices } from "../services/index.js";
 import { asyncHandler } from "../utils/async_handler.js";
 import { ApiResponse } from "../utils/api_response.js";
 
+
+
 const createLink = asyncHandler(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, req.user.id);
 
@@ -83,6 +85,7 @@ const getLinkAnalytics = asyncHandler(async (req, res) => {
 });
 
 const redirectLink = asyncHandler(async (req, res) => {
+
      const { shortCode } = req.params;
 
      try {
@@ -98,14 +101,18 @@ const redirectLink = asyncHandler(async (req, res) => {
                shortCode,
                clientInfo,
           );
-
+          const t1 = performance.now();
           if (!longUrl) {
                return res.redirect(
                     `${process.env.FRONTEND_URL}/protectedlink?q=${shortCode}`,
                );
           }
 
-          return res.redirect(longUrl);
+          res.redirect(longUrl);
+          if (++reqCount % 100 === 0) {
+               console.log(`resolveAndTrack=${(t1 - t0).toFixed(1)}ms`);
+          }
+          return;
      } catch (error) {
           if (error.message === "This link has expired") {
                return res.redirect(`${process.env.FRONTEND_URL}/link-expired`);

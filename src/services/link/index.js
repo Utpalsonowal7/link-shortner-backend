@@ -110,17 +110,11 @@ const deleteLink = async (id, userId) => {
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
-     const dbStart = performance.now();
 
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
 
-     if (process.env.DEBUG_PERFORMANCE === "true") {
-          console.log(
-               `DB findUnique: ${(performance.now() - dbStart).toFixed(2)} ms`,
-          );
-     }
 
      if (!link) {
           throw new ApiError(404, "Link not found");

@@ -8,7 +8,7 @@ if(!connectionString) {
      process.exit(1);
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({ connectionString, max:5});
 
 const prisma = new PrismaClient({
      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["warn"],
