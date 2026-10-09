@@ -1,4 +1,5 @@
 import Router from "express";
+import { limiter } from "../middlewares/rateLimiter.middleware.js";
 import {
      createOrder,
      verifyPayment,
@@ -6,7 +7,7 @@ import {
 
 const router = Router();
 
-router.route("/create-order").post(createOrder);
-router.route("/verify-payment").post(verifyPayment);
+router.route("/create-order").post(limiter.paymentCreateLimiter, createOrder);
+router.route("/verify-payment").post(limiter.paymentVerifyLimiter, verifyPayment);
 
 export default router;

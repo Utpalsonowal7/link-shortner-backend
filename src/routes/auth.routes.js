@@ -34,19 +34,19 @@ router
     .post(limiter.verifyLimiter, validate(otpSchema), verifyOtp);
 router.route("/resend-otp").post(limiter.sendOTPLimiter, resendOtp);
 router.route("/login").post(limiter.loginLimiter, loginUser);
-router.route("/refresh-token").post(refreshAccessToken);
-router.route("/google").get(googleAuth);
-router.route("/google/callback").get(limiter.loginLimiter, googleAuthCallback);
+router.route("/refresh-token").post(limiter.refreshLimiter, refreshAccessToken);
+router.route("/google").get(limiter.googleLimiter, googleAuth);
+router.route("/google/callback").get(limiter.googleLimiter, googleAuthCallback);
 router
     .route("/forgot-password")
-    .post(validate(forgotPasswordSchema), forgotPassword);
+    .post(limiter.forgotPasswordLimiter, validate(forgotPasswordSchema), forgotPassword);
 router
     .route("/reset-password")
-    .post(validate(resetPasswordSchema), resetPassword);
+    .post(limiter.resetPasswordLimiter, validate(resetPasswordSchema), resetPassword);
 
 router
     .route("/change-password")
-    .patch(verifyJWT, validate(changePasswordSchema), chnagePassword);
+    .patch(verifyJWT, limiter.changePasswordLimiter, validate(changePasswordSchema), chnagePassword);
 router.route("/me").get(verifyJWT, getCurrentUser);
 router.route("/logout").post(verifyJWT, logOut);
 

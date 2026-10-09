@@ -109,7 +109,11 @@ model ClickEvent {
   browser String?
   os      String?
 
-  referrer String?
+  referrer  String?
+  isBot     Boolean?
+  botName   String?
+  botReason String?
+  origin    String?
 
   utmSource   String?
   utmMedium   String?
@@ -120,6 +124,7 @@ model ClickEvent {
   @@index([linkId])
   @@index([timestamp])
   @@index([linkId, timestamp])
+  @@index([linkId, isBot, timestamp])
   @@map("click_events")
 }
 

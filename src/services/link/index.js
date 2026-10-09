@@ -6,6 +6,16 @@ import bcrypt, { hash } from "bcrypt";
 import { ApiResponse } from "../../utils/api_response.js";
 import { KpiCard } from "../../utils/kpiCard.js";
 
+const getClickTrafficCounts = async (where) => {
+     const [humanClicks, botClicks, unknownClicks] = await Promise.all([
+          prisma.clickEvent.count({ where: { ...where, isBot: false } }),
+          prisma.clickEvent.count({ where: { ...where, isBot: true } }),
+          prisma.clickEvent.count({ where: { ...where, isBot: null } }),
+     ]);
+
+     return { humanClicks, botClicks, unknownClicks };
+};
+
 const createLink = async (data, userId) => {
      const {
           longUrl,
@@ -150,7 +160,7 @@ const trackClick = async (
      utmCampaign,
      utmContent,
 ) => {
-     const { ip, referrer, device, browser, os } = clientInfo;
+     const { ip, referrer, device, browser, os, isBot, botName, botReason, origin } = clientInfo;
 
      const geo = await getClientGeoInfo(ip);
 
@@ -163,6 +173,10 @@ const trackClick = async (
                     device: device ?? null,
                     browser: browser ?? null,
                     os: os ?? null,
+                    isBot: typeof isBot === "boolean" ? isBot : null,
+                    botName: botName ?? null,
+                    botReason: botReason ?? null,
+                    origin: origin ?? null,
                     utmSource,
                     utmMedium,
                     utmCampaign,
@@ -272,6 +286,25 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           }),
      ]);
 
+     const [clickTraffic, clickTrafficToday, botSources] = await Promise.all([
+          getClickTrafficCounts({ linkId: Number(id) }),
+          getClickTrafficCounts({
+               linkId: Number(id),
+               timestamp: { gte: startOfToday },
+          }),
+          prisma.clickEvent.groupBy({
+               by: ["botName", "origin"],
+               where: {
+                    linkId: Number(id),
+                    isBot: true,
+                    botName: { not: null },
+               },
+               _count: { id: true },
+               orderBy: { _count: { id: "desc" } },
+               take: 20,
+          }),
+     ]);
+
      // time series bucketing
      const buckets = {};
      for (let i = 0; i < days; i++) {
@@ -304,8 +337,14 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
                shortUrl: `${process.env.BACK_END_URL}${link.shortCode}`,
           },
           totalClicks: link.totalClicks,
+          humanClicks: clickTraffic.humanClicks,
+          botClicks: clickTraffic.botClicks,
+          unknownClicks: clickTraffic.unknownClicks,
           clicksToday,
+          humanClicksToday: clickTrafficToday.humanClicks,
+          botClicksToday: clickTrafficToday.botClicks,
           avgPerDay,
+          botSources,
           uniqueCountries: uniqueCountries.length,
           clicksByCountry,
           clicksByDevice,
@@ -417,6 +456,11 @@ const getUserStats = async (userId) => {
           }),
      ]);
 
+     const clickTraffic = await getClickTrafficCounts({
+          link: { userId: Number(userId) },
+     });
+     const clickTrafficToday = await getClickTrafficCounts(whereToday);
+
      const deltaPercent = (current, previous) => {
           if (!previous) return null;
           return Math.round(((current - previous) / previous) * 100);
@@ -437,7 +481,12 @@ const getUserStats = async (userId) => {
      return {
           totalLinks,
           totalClicks,
+          humanClicks: clickTraffic.humanClicks,
+          botClicks: clickTraffic.botClicks,
+          unknownClicks: clickTraffic.unknownClicks,
           clicksToday,
+          humanClicksToday: clickTrafficToday.humanClicks,
+          botClicksToday: clickTrafficToday.botClicks,
           activeLinks,
           linksThisMonth,
 
@@ -725,6 +774,30 @@ const homePageData = async (userId) => {
           }),
      ]);
 
+     const [humanClicksToday, botClicksToday, unknownClicksToday] = await Promise.all([
+          prisma.clickEvent.count({
+               where: {
+                    timestamp: { gte: today, lt: tomorrow },
+                    isBot: false,
+                    link: { userId: Number(userId) },
+               },
+          }),
+          prisma.clickEvent.count({
+               where: {
+                    timestamp: { gte: today, lt: tomorrow },
+                    isBot: true,
+                    link: { userId: Number(userId) },
+               },
+          }),
+          prisma.clickEvent.count({
+               where: {
+                    timestamp: { gte: today, lt: tomorrow },
+                    isBot: null,
+                    link: { userId: Number(userId) },
+               },
+          }),
+     ]);
+
      const kpiData = [
           new KpiCard(1, "Today's Clicks", todayClicks, yesterdayClicks),
           new KpiCard(2, "Links/Qr Created", todayLinks, yesterdayLinks),
@@ -765,6 +838,9 @@ const homePageData = async (userId) => {
 
      return {
           kpiData,
+          clickTraffic: {
+               today: { total: todayClicks, human: humanClicksToday, bots: botClicksToday, unknown: unknownClicksToday },
+          },
           clisksByHour: formattedClicksByHour,
           topCountries: formattedCountries,
           topLinks: formattedTopLinks,
@@ -1722,7 +1798,30 @@ const overallAnalytics = async (userId, range) => {
           );
      }
 
-     return result[0];
+     const clickTraffic = await getClickTrafficCounts({
+          link: { userId: Number(userId) },
+          ...(startDate ? { timestamp: { gte: startDate } } : {}),
+     });
+     const botSources = await prisma.clickEvent.groupBy({
+          by: ["botName", "origin"],
+          where: {
+               link: { userId: Number(userId) },
+               isBot: true,
+               botName: { not: null },
+               ...(startDate ? { timestamp: { gte: startDate } } : {}),
+          },
+          _count: { id: true },
+          orderBy: { _count: { id: "desc" } },
+          take: 20,
+     });
+
+     return {
+          ...result[0],
+          humanClicks: clickTraffic.humanClicks,
+          botClicks: clickTraffic.botClicks,
+          unknownClicks: clickTraffic.unknownClicks,
+          botSources,
+     };
 };
 
 const editLink = async (password, id) => {
