@@ -52,7 +52,6 @@ const createLink = async (data, userId) => {
      return link;
 };
 
-
 const deleteLink = async (id, userId) => {
      await prisma.link.delete({
           where: { id: Number(id), userId: userId },
@@ -60,11 +59,9 @@ const deleteLink = async (id, userId) => {
 };
 
 const resolveAndTrack = async (shortCode, clientInfo) => {
-
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
-
 
      if (!link) {
           throw new ApiError(404, "Link not found");
@@ -150,8 +147,8 @@ const trackClick = async (
      utmCampaign,
      utmContent,
 ) => {
-     const { ip, referrer, device, browser, os } = clientInfo;
-
+     const { ip, referrer, device, browser, os, userAgent } = clientInfo;
+     console.log(userAgent);
      const geo = await getClientGeoInfo(ip);
 
      await prisma.$transaction([
