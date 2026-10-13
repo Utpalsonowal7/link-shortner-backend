@@ -10,7 +10,11 @@
     "start": "node dist/src/index.js",
     "test": "node --import tsx --test --experimental-test-module-mocks test/*.test.ts",
     "postinstall": "prisma generate",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "test:ci": "node --import tsx --test --experimental-test-module-mocks --test-reporter=spec --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination=test-results.xml test/*.test.ts",
+    "pretest:integration": "npm run build",
+    "test:integration": "node --import tsx --test --experimental-test-module-mocks --test-timeout=30000 test/integration/*.test.ts",
+    "test:integration:ci": "node --import tsx --test --experimental-test-module-mocks --test-timeout=30000 --test-reporter=spec --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination=integration-results.xml test/integration/*.test.ts"
   },
   "author": "Utpal Sonowal",
   "license": "ISC",

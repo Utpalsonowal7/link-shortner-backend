@@ -35,7 +35,30 @@ npm run typecheck
 npm test
 ```
 
-`npm test` builds first and exercises the compiled application's HTTP routes with isolated database, Redis, email queue, and geolocation dependencies. It does not send email, charge payments, or connect to a production database. The Node test runner uses its experimental module-mocking flag. Live database and third-party integration checks still require a configured environment.
+`npm test` builds first and runs HTTP regression tests against the compiled application, plus JWT tests. HTTP tests isolate database, Redis, email queue, and geolocation dependencies. Coverage includes authentication/cookies, validation, redirects, password protection, ownership, pagination, and multipart QR uploads. The Node test runner uses its experimental module-mocking flag.
+
+### PostgreSQL and Redis integration tests
+
+Use a dedicated local PostgreSQL database whose name contains `test`, and Redis database 15. The suite rejects remote hosts and removes only its own uniquely named test records and keys; it never flushes a database. Supply these variables in your shell (the test process does not load `.env`):
+
+```sh
+export DATABASE_URL=postgresql://backend_test:backend_test@127.0.0.1:5432/backend_test
+export REDIS_URL=redis://127.0.0.1:6379/15
+npx prisma migrate deploy
+npm run test:integration
+```
+
+The integration suite exercises real Prisma/PostgreSQL persistence, unique short-code constraints, search/pagination, owner-only edits/deletes, hashed refresh sessions and rotation/revocation, OTP verification, and Redis temporary-link expiration. Email delivery and geolocation are mocked; no paid third-party calls are made.
+
+### GitHub Actions
+
+`Backend CI` runs on every pull request, pushes to `main`, and manual dispatch:
+
+- Node 22 and 24: clean dependency install, strict application/test type checks, production build, HTTP and JWT tests.
+- Node 24 with disposable PostgreSQL 16 and Redis 7 service containers: apply all committed migrations to an empty database, build, and run integration tests.
+- JUnit reports are uploaded for 14 days, including on test failures. Jobs have a ten-minute timeout and superseded runs are cancelled.
+
+No repository secrets are required. `npm run test:ci` and `npm run test:integration:ci` are report-producing commands that expect `npm run build` to have run first. External OAuth, email, uploads, geolocation, and payments still need staging verification.
 
 ## TypeScript layout
 

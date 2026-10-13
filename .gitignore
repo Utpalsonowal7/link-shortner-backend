@@ -8,3 +8,6 @@ dist/
 coverage/
 .env.*
 !.env.example
+
+/test-results.xml
+/integration-results.xml
