@@ -3,3 +3,8 @@ node_modules
 .env
 logs
 /generated/prisma
+
+dist/
+coverage/
+.env.*
+!.env.example
