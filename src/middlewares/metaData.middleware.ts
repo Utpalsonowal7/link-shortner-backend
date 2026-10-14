@@ -1,0 +1,19 @@
+import { getClientInfo } from "../utils/parseDevice.js";
+import getClientIp from "../utils/getClientIP.js";
+import type { RequestHandler } from "express";
+
+export const clientDetails: RequestHandler = (req, res, next) => {
+     const userAgent = req.get("user-agent") || "";
+     const data = getClientInfo(userAgent);
+     const ip = getClientIp(req);
+
+     req.clientInfo = {
+          ipAddress: ip,
+          device: data.device,
+          browser: data.browser,
+          os: data.os,
+          agent: userAgent,
+     };
+
+     next();
+};
