@@ -270,7 +270,7 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           }),
      ]);
 
-     // time series bucketing
+  
      const buckets = {};
      for (let i = 0; i < days; i++) {
           const d = new Date();
@@ -286,7 +286,7 @@ const getLinkAnalytics = async (id, userId, query = {}) => {
           .map(([date, count]) => ({ date, count }))
           .sort((a, b) => a.date.localeCompare(b.date));
 
-     // avg per day since link was created
+  
      const daysSinceCreated = Math.max(
           1,
           Math.ceil(
