@@ -85,4 +85,29 @@ Existing API paths, cookie names, response envelopes, and database tables remain
 - Give BullMQ plain Redis connection options to avoid mismatched ioredis class types.
 - Close the HTTP server, worker, queue, Redis client, and Prisma during shutdown.
 
-Bio pages and the other planned product upgrades are separate work.
+Bio-page APIs and DNS domain verification are documented below.
+
+## Docker
+
+```sh
+cp .env.example .env
+# Set your secrets and integration credentials in .env.
+docker compose up --build -d
+```
+
+The API is available at `http://localhost:8080`. Compose starts PostgreSQL and Redis, waits for health checks, applies migrations in a one-shot container, and starts the API as a non-root user. It overrides DATABASE_URL and REDIS_URL to the internal service names. Database ports are not exposed to the host; persistent named volumes retain data across restarts. The default PostgreSQL password is for local development; set `POSTGRES_PASSWORD` for your environment (URL-encode reserved characters if needed).
+
+```sh
+docker compose logs -f api
+docker compose down
+```
+
+`down` preserves data. Only use `docker compose down --volumes` when you intend to erase this stack's data.
+
+For hosting, build `docker build --target runtime -t utpx-backend .`. The runtime contains compiled JS and production dependencies, excludes `.env`, and uses the container health check. Supply environment variables at runtime. Run the separate `migrate` image target once per deployment before starting the runtime; do not run migrations on every replica startup. Termination signals reach Node directly. Configure HTTPS at your hosting/reverse-proxy layer.
+
+## Custom domains and bio pages
+
+See [the frontend API contract](docs/bio-domains-api.md) for endpoints, payloads, publishing, DNS records, and hosting requirements. This release adds a database migration for bio pages and changes domain deletion to protect associated links. Apply migrations before deploying the new code.
+
+CI also builds the Docker stack, applies migrations, checks HTTP health, and verifies that the API runs without root. Integration tests use real PostgreSQL/Redis and deterministic DNS responses; unit tests exercise TXT/CNAME matching and DNS error handling. Public DNS propagation and hosting TLS must be checked with your actual domain when configured.

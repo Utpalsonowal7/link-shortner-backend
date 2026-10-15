@@ -1,3 +1,4 @@
+import { requireVerifiedDomain } from "../domain/index.js";
 import type { Link, Prisma } from "../../../generated/prisma/client.js";
 import type { CreateLinkInput, LinkQuery } from "../../validators/linkSchema.js";
 import type { ClickClientInfo } from "../../types/index.js";
@@ -25,6 +26,8 @@ const createLink = async (data: CreateLinkInput, userId: number) => {
           utmContent,
      } = data;
 
+     const domain = data.domainId ? await requireVerifiedDomain(userId, data.domainId) : null;
+
      const shortCode = customCode
           ? customCode
           : await generateUniqueShortCode();
@@ -34,6 +37,7 @@ const createLink = async (data: CreateLinkInput, userId: number) => {
      const link = await prisma.link.create({
           data: {
                shortCode,
+               domainId: domain?.id,
                longUrl,
                title: title ?? null,
                expiresAt: expiresAt ?? null,
@@ -53,7 +57,7 @@ const createLink = async (data: CreateLinkInput, userId: number) => {
           },
      });
 
-     return link;
+     return { ...link, domain: domain?.domain };
 };
 
 const getUserLinks = async (userId: number, { page, limit, search }: LinkQuery) => {
@@ -78,12 +82,12 @@ const deleteLink = async (id: string | number, userId: number) => {
      });
 };
 
-const resolveAndTrack = async (shortCode: string, clientInfo: ClickClientInfo) => {
+const resolveAndTrack = async (shortCode: string, clientInfo: ClickClientInfo, domainId?: number | null) => {
      const link = await prisma.link.findUnique({
           where: { shortCode },
      });
 
-     if (!link) {
+     if (!link || (domainId != null && link.domainId !== domainId)) {
           throw new ApiError(404, "Link not found");
      }
 

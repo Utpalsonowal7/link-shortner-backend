@@ -1,3 +1,4 @@
+import { redirectDomain } from "../utils/redirectHost.js";
 import { linkQuerySchema, type CreateLinkInput } from "../validators/linkSchema.js";
 import { requireUser, queryString, routeParam } from "../utils/request.js";
 import { LinkServices } from "../services/index.js";
@@ -7,7 +8,7 @@ import { ApiResponse } from "../utils/api_response.js";
 const createLink = asyncHandler<CreateLinkInput>(async (req, res) => {
      const link = await LinkServices.CreateLinkService(req.body, requireUser(req).id);
 
-     const shortLink = `${process.env.BACK_END_URL}${link.shortCode}`;
+     const shortLink = `${link.domain ? `https://${link.domain}/` : `${process.env.BACK_END_URL?.replace(/\/$/, "")}/`}${link.shortCode}`;
 
      const { longUrl } = link;
 
@@ -74,6 +75,7 @@ const getLinkAnalytics = asyncHandler(async (req, res) => {
 
 const redirectLink = asyncHandler(async (req, res) => {
      const shortCode = routeParam(req, "shortCode");
+     const domainId = await redirectDomain(req.headers.host);
 
      try {
           const clientInfo = {
@@ -88,6 +90,7 @@ const redirectLink = asyncHandler(async (req, res) => {
           const longUrl = await LinkServices.ResolveAndTrackService(
                shortCode,
                clientInfo,
+               domainId,
           );
           if (!longUrl) {
                return res.redirect(

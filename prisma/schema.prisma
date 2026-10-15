@@ -35,6 +35,7 @@ model User {
   sessions Session[]
   links    Link[]
   domains  Domain[]
+  bioPages BioPage[]
 
   @@map("users")
 }
@@ -65,7 +66,7 @@ model Link {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   domainId Int?
-  domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  domain   Domain? @relation(fields: [domainId], references: [id], onDelete: Restrict)
 
   password              String?
   is_password_protected Boolean @default(false)
@@ -171,7 +172,39 @@ model Domain {
   updatedAt DateTime @updatedAt
 
   links Link[]
+  bioPage BioPage?
 
   @@index([userId])
   @@map("domains")
+}
+
+model BioPage {
+  id Int @id @default(autoincrement())
+  userId Int
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug String @unique
+  displayName String
+  description String @default("")
+  avatarUrl String?
+  theme String @default("light")
+  isPublished Boolean @default(false)
+  domainId Int? @unique
+  domain Domain? @relation(fields: [domainId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  links BioLink[]
+  @@index([userId])
+  @@map("bio_pages")
+}
+
+model BioLink {
+  id Int @id @default(autoincrement())
+  pageId Int
+  page BioPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title String
+  url String
+  position Int
+  isActive Boolean @default(true)
+  @@index([pageId, position])
+  @@map("bio_links")
 }

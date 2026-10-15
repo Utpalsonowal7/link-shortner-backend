@@ -45,13 +45,19 @@ app.use(
 
 app.use(clientDetails);
 
-app.get("/", (req, res) => {
-
-     return res.json({
-          message: "Custom domain reached UTPX server",
-          host: req.hostname,
-     });
-});
+import bioRouter, { publicBioRouter } from "./routes/bio.routes.js";
+import { asyncHandler } from "./utils/async_handler.js";
+import { redirectDomain } from "./utils/redirectHost.js";
+import { publicBio } from "./services/bio/index.js";
+import { ApiResponse } from "./utils/api_response.js";
+app.get("/", asyncHandler(async (req, res) => {
+    const domainId = await redirectDomain(req.headers.host);
+    if (domainId === null) return res.json({ message: "UTPX API" });
+    const page = await publicBio({ domainId, domain: { isVerified: true } });
+    return res.set("Cache-Control", "no-store").json(new ApiResponse(200, page, "Bio page"));
+}));
+app.use("/api/v1/bio-pages", bioRouter);
+app.use("/api/v1/public/bio-pages", publicBioRouter);
 
 import healthCheckRoute from "./routes/healthCheck.route.js";
 import authRoute from "./routes/auth.routes.js";

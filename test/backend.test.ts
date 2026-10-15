@@ -1,3 +1,4 @@
+import { httpRequest } from "./helpers/http.js";
 import { unlink } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { after, beforeEach, mock, test } from "node:test";
@@ -107,8 +108,9 @@ beforeEach(() => {
 });
 function request(path: string, options: RequestInit = {}, authenticated = false) {
     const headers = new Headers(options.headers);
+    headers.set("host", "short.example");
     if (authenticated) headers.set("authorization", `Bearer ${jwt.sign({ id: user.id, name: user.name, email: user.email }, process.env.ACCESS_TOKEN_SECRET!)}`);
-    return fetch(`${baseUrl}${path}`, { ...options, headers, redirect: "manual", signal: AbortSignal.timeout(5000) });
+    return httpRequest(`${baseUrl}${path}`, { ...options, headers, redirect: "manual", signal: AbortSignal.timeout(5000) });
 }
 function jsonBody(body: unknown): RequestInit {
     return { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };

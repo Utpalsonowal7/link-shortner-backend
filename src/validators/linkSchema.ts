@@ -18,6 +18,8 @@ const createLinkSchema = z.object({
                },
           ),
 
+     domainId: z.number().int().positive().optional(),
+
      title: z
           .string()
           .trim()
