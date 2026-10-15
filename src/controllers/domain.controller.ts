@@ -57,4 +57,9 @@ const deleteDomain = asyncHandler(async (req, res) => {
           .json(new ApiResponse(200, result, "Domain deleted successfully"));
 });
 
-export default { createDomain, getUserDomains, getDomainById, deleteDomain };
+const verifyDomain = asyncHandler(async (req, res) => {
+    const result = await DomainService.VerifyDomain(requireUser(req).id, Number(routeParam(req, "id")));
+    res.json(new ApiResponse(200, result, result.isVerified ? "Domain verified" : "DNS records do not match"));
+});
+
+export default { verifyDomain, createDomain, getUserDomains, getDomainById, deleteDomain };

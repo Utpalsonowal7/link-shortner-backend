@@ -1,7 +1,10 @@
+import { httpRequest } from "../helpers/http.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { after, before, mock, test } from "node:test";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import type { AddressInfo } from "node:net";
 import type { User } from "../../generated/prisma/client.js";
 
 // Fail closed: these tests write data and must target explicit local test services.
@@ -14,6 +17,11 @@ for (const name of ["DATABASE_URL", "REDIS_URL"] as const) {
 }
 Object.assign(process.env, {
     NODE_ENV: "test",
+    CORS_ORIGIN: "https://frontend.example",
+    FRONTEND_URL: "https://frontend.example",
+    CUSTOM_DOMAIN_TARGET: "short.example",
+    RAZORPAY_KEY_ID: "test",
+    RAZORPAY_KEY_SECRET: "test",
     BACK_END_URL: "https://short.example/",
     ACCESS_TOKEN_SECRET: "integration-access-secret",
     REFRESH_TOKEN_SECRET: "integration-refresh-secret",
@@ -21,6 +29,8 @@ Object.assign(process.env, {
     REFRESH_TOKEN_EXPIRES_IN: "30d",
 });
 const compiled = (path: string) => new URL(`../../dist/src/${path}`, import.meta.url);
+let dnsChecks = { ownership: true, routing: true };
+mock.module(compiled("services/domain/dns.js"), { namedExports: { checkDomainDns: async () => dnsChecks } });
 // Real persistence; no external email or geolocation requests.
 mock.module(compiled("lib/queqe.js"), { namedExports: { emailQueue: { add: async () => ({ id: "test" }) } } });
 mock.module(compiled("services/geo.service.js"), { namedExports: { getClientGeoInfo: async () => ({ country: "India" }) } });
@@ -31,6 +41,19 @@ const { default: auth }: typeof import("../../src/services/auth/index.js") = awa
 const { default: temp }: typeof import("../../src/services/temp/index.js") = await import(compiled("services/temp/index.js").href);
 const { otpKey }: typeof import("../../src/utils/otpKey.js") = await import(compiled("utils/otpKey.js").href);
 const { hashToken }: typeof import("../../src/utils/hashToken.js") = await import(compiled("utils/hashToken.js").href);
+const { default: domains }: typeof import("../../src/services/domain/index.js") = await import(compiled("services/domain/index.js").href);
+const bio: typeof import("../../src/services/bio/index.js") = await import(compiled("services/bio/index.js").href);
+const { createBioSchema }: typeof import("../../src/validators/bioSchema.js") = await import(compiled("validators/bioSchema.js").href);
+const { default: app }: typeof import("../../src/app.js") = await import(compiled("app.js").href);
+const server = app.listen(0, "127.0.0.1");
+await new Promise<void>(resolve => server.once("listening", resolve));
+const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+function request(path: string, method = "GET", body?: unknown, authenticated = true, host = "short.example", forwardedHost?: string) {
+    const headers: Record<string, string> = { host, "content-type": "application/json" };
+    if (authenticated) headers.authorization = `Bearer ${jwt.sign({ email: owner.email }, process.env.ACCESS_TOKEN_SECRET!)}`;
+    if (forwardedHost) headers["x-forwarded-host"] = forwardedHost;
+    return httpRequest(baseUrl + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual", signal: AbortSignal.timeout(5000) });
+}
 const prefix = `ci-${randomUUID()}`;
 const userIds: number[] = [];
 const redisKeys: string[] = [];
@@ -49,6 +72,9 @@ before(async () => {
 });
 after(async () => {
     try {
+        await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+        await prisma.bioPage.deleteMany({ where: { userId: { in: userIds } } });
+        await prisma.link.deleteMany({ where: { userId: { in: userIds } } });
         // Delete only this run's records; user cascades remove links and sessions.
         await prisma.user.deleteMany({ where: { id: { in: userIds } } });
         if (redisKeys.length) await client.del(...redisKeys);
@@ -136,4 +162,97 @@ test("temporary links round-trip through Redis with a five-minute TTL", async ()
     // Expire deterministically without a wall-clock sleep.
     await client.expire(key, 0);
     assert.equal(await temp.TempredirectService(key), null);
+});
+
+
+test("domain HTTP API validates input and verifies both records before allowing assignment", async () => {
+    assert.equal((await request("/api/v1/domain", "POST", { domain: "https://bad.example" })).status, 422);
+    assert.equal((await request("/api/v1/domain", "POST", {}, false)).status, 401);
+    const response = await request("/api/v1/domain", "POST", { domain: `${prefix}.example.com` });
+    assert.equal(response.status, 201);
+    const domain = (await response.json()).data;
+    assert.equal(domain.isVerified, false);
+    assert.equal(domain.dns.ownership.type, "TXT");
+    assert.equal(domain.dns.routing.name, `${prefix}.example.com`);
+    await assert.rejects(links.CreateLinkService({ longUrl: "https://example.test", domainId: domain.id }, owner.id), { statusCode: 422 });
+    dnsChecks = { ownership: true, routing: false };
+    assert.equal((await domains.VerifyDomain(owner.id, domain.id)).isVerified, false);
+    dnsChecks = { ownership: false, routing: true };
+    assert.equal((await domains.VerifyDomain(owner.id, domain.id)).isVerified, false);
+    dnsChecks = { ownership: true, routing: true };
+    assert.equal((await request(`/api/v1/domain/${domain.id}/verify`, "POST")).status, 200);
+    assert.equal((await prisma.domain.findUniqueOrThrow({ where: { id: domain.id } })).isVerified, true);
+    await assert.rejects(domains.VerifyDomain(other.id, domain.id), { statusCode: 404 });
+    await assert.rejects(links.CreateLinkService({ longUrl: "https://example.test", domainId: domain.id }, other.id), { statusCode: 422 });
+    assert.equal((await request("/api/v1/domain/invalid")).status, 422);
+});
+
+test("custom-domain redirects are isolated, ignore forwarded-host spoofing and stop after failed re-verification", async () => {
+    const domain = await domains.CreateDomainService(owner.id, `${prefix}-redirect.example.com`);
+    await domains.VerifyDomain(owner.id, domain.id);
+    const response = await request("/api/v1/links", "POST", { longUrl: "https://example.test/landing", domainId: domain.id });
+    assert.equal(response.status, 201);
+    const shortLink: string = (await response.json()).data.shortLink;
+    assert.equal(new URL(shortLink).host, domain.domain);
+    const path = new URL(shortLink).pathname;
+    // Protected links avoid asynchronous analytics writes during cleanup.
+    await prisma.link.update({ where: { shortCode: path.slice(1) }, data: { is_password_protected: true, password: "test" } });
+    assert.equal((await request(path, "GET", undefined, false, domain.domain)).status, 302);
+    const second = await domains.CreateDomainService(owner.id, `${prefix}-second.example.com`);
+    await domains.VerifyDomain(owner.id, second.id);
+    assert.equal((await request(path, "GET", undefined, false, second.domain)).status, 404);
+    assert.equal((await request(path, "GET", undefined, false, "unknown.example.com", domain.domain)).status, 404);
+    await assert.rejects(domains.DeleteDomain(owner.id, domain.id), { statusCode: 409 });
+    assert.ok(await prisma.link.findUnique({ where: { shortCode: path.slice(1) } }));
+    dnsChecks = { ownership: false, routing: true };
+    await domains.VerifyDomain(owner.id, domain.id);
+    assert.equal((await request(path, "GET", undefined, false, domain.domain)).status, 404);
+    dnsChecks = { ownership: true, routing: true };
+});
+
+test("bio HTTP CRUD keeps drafts private and publishes only safe public fields and active links", async () => {
+    assert.equal((await request("/api/v1/bio-pages", "POST", {}, false)).status, 401);
+    assert.equal((await request("/api/v1/bio-pages", "POST", { slug: "bad", displayName: "Bad", links: [{ title: "Bad", url: "javascript:alert(1)" }] })).status, 422);
+    const input = { slug: `${prefix}-bio`, displayName: "Utpal", links: [{ title: "Portfolio", url: "https://utpx.in" }, { title: "Hidden", url: "https://example.com", isActive: false }] };
+    const created = await request("/api/v1/bio-pages", "POST", input);
+    assert.equal(created.status, 201);
+    const page = (await created.json()).data;
+    assert.equal((await request(`/api/v1/public/bio-pages/${input.slug}`, "GET", undefined, false)).status, 404);
+    assert.equal((await request(`/api/v1/bio-pages/${page.id}`, "PATCH", { isPublished: true })).status, 200);
+    const published = await request(`/api/v1/public/bio-pages/${input.slug}`, "GET", undefined, false);
+    assert.equal(published.status, 200);
+    const publicPage = (await published.json()).data;
+    assert.equal(publicPage.links.length, 1);
+    assert.equal(publicPage.links[0].title, "Portfolio");
+    for (const privateField of ["userId", "domainId", "isPublished", "verificationToken"]) assert.equal(privateField in publicPage, false);
+    assert.equal((await request("/api/v1/bio-pages", "POST", input)).status, 409);
+    await assert.rejects(bio.getBio(other.id, page.id), { statusCode: 404 });
+    await assert.rejects(bio.updateBio(other.id, page.id, { displayName: "Hijacked" }), { statusCode: 404 });
+    await assert.rejects(bio.deleteBio(other.id, page.id), { statusCode: 404 });
+    await request(`/api/v1/bio-pages/${page.id}`, "PATCH", { links: [{ title: "Second", url: "https://two.example" }, { title: "First", url: "https://one.example" }] });
+    assert.deepEqual((await bio.getBio(owner.id, page.id)).links.map(l => [l.title, l.position]), [["Second", 0], ["First", 1]]);
+    await request(`/api/v1/bio-pages/${page.id}`, "PATCH", { isPublished: false });
+    assert.equal((await request(`/api/v1/public/bio-pages/${input.slug}`, "GET", undefined, false)).status, 404);
+    assert.equal((await request(`/api/v1/bio-pages/${page.id}`, "DELETE")).status, 200);
+    assert.equal(await prisma.bioLink.count({ where: { pageId: page.id } }), 0);
+});
+
+test("bio domains require verification and ownership, are exclusive, and can be detached safely", async () => {
+    const domain = await domains.CreateDomainService(owner.id, `${prefix}-bio.example.com`);
+    const input = createBioSchema.parse({ slug: `${prefix}-domain`, displayName: "Bio", domainId: domain.id, isPublished: true });
+    await assert.rejects(bio.createBio(owner.id, input), { statusCode: 422 });
+    await domains.VerifyDomain(owner.id, domain.id);
+    await assert.rejects(bio.createBio(other.id, input), { statusCode: 422 });
+    const page = await bio.createBio(owner.id, input);
+    await assert.rejects(bio.createBio(owner.id, { ...input, slug: `${prefix}-another` }), { statusCode: 409 });
+    assert.equal((await request("/", "GET", undefined, false, domain.domain)).status, 200);
+    assert.equal((await request(`/api/v1/public/bio-pages/domain/${domain.domain}`, "GET", undefined, false)).status, 200);
+    await assert.rejects(domains.DeleteDomain(owner.id, domain.id), { statusCode: 409 });
+    dnsChecks = { ownership: false, routing: false };
+    await domains.VerifyDomain(owner.id, domain.id);
+    assert.equal((await request(`/api/v1/public/bio-pages/domain/${domain.domain}`, "GET", undefined, false)).status, 404);
+    dnsChecks = { ownership: true, routing: true };
+    await bio.updateBio(owner.id, page.id, { domainId: null });
+    await domains.DeleteDomain(owner.id, domain.id);
+    assert.ok(await bio.getBio(owner.id, page.id));
 });
