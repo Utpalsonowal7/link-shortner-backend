@@ -95,7 +95,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-The API is available at `http://localhost:8080`. Compose starts PostgreSQL and Redis, waits for health checks, applies migrations in a one-shot container, and starts the API as a non-root user. It overrides DATABASE_URL and REDIS_URL to the internal service names. Database ports are not exposed to the host; persistent named volumes retain data across restarts. The default PostgreSQL password is for local development; set `POSTGRES_PASSWORD` for your environment (URL-encode reserved characters if needed).
+The API is available at `http://localhost:8080`. Compose starts PostgreSQL and Redis, waits for health checks, applies migrations in a one-shot container, and starts the API as a non-root user. It overrides DATABASE_URL and REDIS_URL to the internal service names. Database ports are not exposed to the host; persistent named volumes retain data across restarts. The default PostgreSQL password is for local development; set `POSTGRES_PASSWORD` for your environment (use a URL-safe password without reserved URL characters).
 
 ```sh
 docker compose logs -f api
