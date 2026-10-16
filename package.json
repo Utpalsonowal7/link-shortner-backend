@@ -49,6 +49,7 @@
     "express-rate-limit": "^8.5.2",
     "ioredis": "^5.11.1",
     "ip-geolocation-api-javascript-sdk": "^3.0.1",
+    "ipaddr.js": "^2.5.0",
     "jsonwebtoken": "^9.0.3",
     "link-preview-js": "^5.0.0",
     "mailgen": "^2.0.34",

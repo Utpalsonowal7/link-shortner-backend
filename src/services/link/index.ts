@@ -1,3 +1,4 @@
+import { shortUrl, domainSelect } from "../../utils/shortUrl.js";
 import { requireVerifiedDomain } from "../domain/index.js";
 import type { Link, Prisma } from "../../../generated/prisma/client.js";
 import type { CreateLinkInput, LinkQuery } from "../../validators/linkSchema.js";
@@ -70,10 +71,10 @@ const getUserLinks = async (userId: number, { page, limit, search }: LinkQuery) 
           ] } : {}),
      };
      const [links, total] = await Promise.all([
-          prisma.link.findMany({ where, omit: { password: true }, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
+          prisma.link.findMany({ where, omit: { password: true }, include: { domain: domainSelect }, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
           prisma.link.count({ where }),
      ]);
-     return { links, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+     return { links: links.map(link => ({ ...link, shortUrl: shortUrl(link) })), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
 
 const deleteLink = async (id: string | number, userId: number) => {
@@ -224,7 +225,7 @@ const getLinkAnalytics = async (id: string | number, userId: number, query: { ra
           clicksByCities,
           clicksByRegion,
      ] = await Promise.all([
-          prisma.link.findUnique({ where: { id: Number(id) } }),
+          prisma.link.findUnique({ where: { id: Number(id) }, include: { domain: domainSelect } }),
 
           prisma.clickEvent.groupBy({
                by: ["country"],
@@ -324,7 +325,7 @@ const getLinkAnalytics = async (id: string | number, userId: number, query: { ra
      return {
           link: {
                ...link,
-               shortUrl: `${process.env.BACK_END_URL}${link.shortCode}`,
+               shortUrl: shortUrl(link),
           },
           totalClicks: link.totalClicks,
           clicksToday,
@@ -449,10 +450,10 @@ const getUserStats = async (userId: number) => {
      if (topLinkToday[0]) {
           const link = await prisma.link.findUnique({
                where: { id: topLinkToday[0].linkId },
-               select: { shortCode: true },
+               select: { shortCode: true, domain: domainSelect },
           });
           if (link) topLink = {
-               shortUrl: `${process.env.BACK_END_URL}${link.shortCode}`,
+               shortUrl: shortUrl(link),
                clicksToday: topLinkToday[0]._count.linkId,
           };
      }
@@ -711,12 +712,12 @@ const homePageData = async (userId: number) => {
           }),
 
           prisma.$queryRaw<TopLinkRow[]>`
-          select l."linkId", count(*)::int as clicks , c."shortCode" , c."longUrl"
+          select l."linkId", count(*)::int as clicks , c."shortCode" , c."longUrl", (SELECT d.domain FROM domains d WHERE d.id = c."domainId") AS "domainName"
           from click_events as l
            join links c
           on c.id = l."linkId"
            where c."userId" = ${userId} and l."timestamp" >= ${today}   AND l."timestamp" < ${tomorrow}
-          group by "linkId", c."shortCode", c."longUrl"
+          group by "linkId", c."shortCode", c."longUrl", c."domainId"
             order by clicks desc
               limit 5
            ;
@@ -783,7 +784,7 @@ const homePageData = async (userId: number) => {
      const formattedTopLinks = topLinks.map((link) => ({
           ...link,
           clicks: Number(link.clicks),
-          shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${link.shortCode}`,
+          shortUrl: shortUrl(link),
      }));
 
      return {
@@ -817,6 +818,7 @@ const getLinksUser = async (userId: number, search?: string, cursor?: string) =>
           },
           select: {
                id: true,
+               domain: domainSelect,
                shortCode: true,
                longUrl: true,
                title: true,
@@ -840,7 +842,7 @@ const getLinksUser = async (userId: number, search?: string, cursor?: string) =>
           title:
                l.title ||
                `${new URL(l.longUrl).hostname.replace(/^www\./, "")} - Untitled`,
-          shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
+          shortUrl: shortUrl(l),
      }));
 
      return {
@@ -862,6 +864,7 @@ const getUserQr = async (userId: number) => {
           },
           select: {
                id: true,
+               domain: domainSelect,
                shortCode: true,
                longUrl: true,
                title: true,
@@ -887,7 +890,7 @@ const getUserQr = async (userId: number) => {
           return {
                ...l,
                title: l.title || `${hostname} - Untitled`,
-               shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${l.shortCode}`,
+               shortUrl: shortUrl(l),
           };
      });
 
@@ -921,6 +924,7 @@ const getLinkById = async (id: string | number, userId: number, range = "7") => 
         l.id,
         l."longUrl",
         l."shortCode",
+        (SELECT d.domain FROM domains d WHERE d.id = l."domainId") AS "domainName",
         l.title,
         l.tags,
         l."createdAt",
@@ -1171,7 +1175,7 @@ const getLinkById = async (id: string | number, userId: number, range = "7") => 
           title:
                data.title ||
                `${new URL(data.longUrl).hostname.replace(/^www\./, "")} - Untitled`,
-          shortUrl: `${process.env.BACK_END_URL?.replace(/\/$/, "")}/${data.shortCode}`,
+          shortUrl: shortUrl(data),
           longUrl: data.longUrl,
           status: data.isActive ? "Active" : "Inactive",
           createdAt: new Date(data.createdAt).toLocaleString("en-IN", {
@@ -1651,6 +1655,7 @@ const overallAnalytics = async (userId: number, range = "7") => {
                         'id', x.id,
                         'desc', x.description,
                         'shortLink', x.shortLink,
+                        'domainName', x."domainName",
                         'clicks', x.clicks
                     )
                     ORDER BY x.clicks DESC
@@ -1662,6 +1667,7 @@ const overallAnalytics = async (userId: number, range = "7") => {
                     l.id,
                     l.title AS description,
                     l."shortCode" AS shortLink,
+                    (SELECT d.domain FROM domains d WHERE d.id = l."domainId") AS "domainName",
                     COUNT(ce.id)::int AS clicks
                 FROM links l
                 LEFT JOIN click_events ce
@@ -1674,7 +1680,8 @@ const overallAnalytics = async (userId: number, range = "7") => {
                 GROUP BY
                     l.id,
                     l.title,
-                    l."shortCode"
+                    l."shortCode",
+                    l."domainId"
                 ORDER BY clicks DESC
                 LIMIT 5
             ) x
@@ -1745,7 +1752,10 @@ const overallAnalytics = async (userId: number, range = "7") => {
           );
      }
 
-     return result[0];
+     const analytics = result[0];
+     return analytics ? { ...analytics, topLinks: analytics.topLinks.map(link => ({
+          ...link, shortUrl: shortUrl({ shortCode: link.shortLink, domainName: link.domainName }),
+     })) } : analytics;
 };
 
 const editLink = async (password: string, id: string | number, userId: number) => {

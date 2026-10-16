@@ -1,3 +1,4 @@
+import domainProofRouter from "./routes/domainProof.routes.js";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -43,6 +44,8 @@ app.use(
      }),
 );
 
+// Do not require tenant verification/auth or invoke analytics on the routing proof.
+app.use("/.well-known/lnkshrt-domain-verification", domainProofRouter);
 app.use(clientDetails);
 
 import bioRouter, { publicBioRouter } from "./routes/bio.routes.js";

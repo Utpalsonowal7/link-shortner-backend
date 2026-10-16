@@ -44,6 +44,7 @@ let updates: { id: number; userId?: number }[] = [];
 let listing: { skip?: number; take?: number; where: { userId: number } } | undefined;
 
 const database = {
+    domain: { findUnique: async () => null },
     user: {
         findUnique: async ({ where }: { where: { email?: string } }) => where.email === user.email ? user : null,
     },

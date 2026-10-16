@@ -30,6 +30,12 @@ Object.assign(process.env, {
 });
 const compiled = (path: string) => new URL(`../../dist/src/${path}`, import.meta.url);
 let dnsChecks = { ownership: true, routing: true };
+let proxyMatched = false;
+let proxyCalls = 0;
+const { routingProof } = await import(compiled("services/domain/proxy.js").href);
+mock.module(compiled("services/domain/proxy.js"), { namedExports: {
+    routingProof, checkProxyRouting: async () => { proxyCalls++; return proxyMatched; },
+} });
 mock.module(compiled("services/domain/dns.js"), { namedExports: { checkDomainDns: async () => dnsChecks } });
 // Real persistence; no external email or geolocation requests.
 mock.module(compiled("lib/queqe.js"), { namedExports: { emailQueue: { add: async () => ({ id: "test" }) } } });
@@ -263,4 +269,52 @@ test("bio domains require verification and ownership, are exclusive, and can be 
     await bio.updateBio(owner.id, page.id, { domainId: null });
     await domains.DeleteDomain(owner.id, domain.id);
     assert.ok(await bio.getBio(owner.id, page.id));
+});
+
+test("proxy routing requires ownership and proof; registered hosts serve nonce-bound proofs", async () => {
+    const domain = await domains.CreateDomainService(owner.id, `${prefix}-proxied.example.com`);
+    const nonce = "a".repeat(48);
+    const proof = await request(`/.well-known/lnkshrt-domain-verification?nonce=${nonce}`, "GET", undefined, false, domain.domain);
+    assert.equal(proof.status, 200);
+    assert.equal(await proof.text(), routingProof(domain.domain, nonce));
+    assert.match(proof.headers.get("cache-control")!, /no-store/);
+    assert.equal((await request("/.well-known/lnkshrt-domain-verification?nonce=bad", "GET", undefined, false, domain.domain)).status, 400);
+    assert.equal((await request(`/.well-known/lnkshrt-domain-verification?nonce=${nonce}`, "GET", undefined, false, "unknown.example.com", domain.domain)).status, 404);
+
+    dnsChecks = { ownership: false, routing: false };
+    proxyMatched = true;
+    const before = proxyCalls;
+    assert.equal((await domains.VerifyDomain(owner.id, domain.id)).isVerified, false);
+    assert.equal(proxyCalls, before);
+    dnsChecks = { ownership: true, routing: false };
+    proxyMatched = false;
+    assert.equal((await domains.VerifyDomain(owner.id, domain.id)).isVerified, false);
+    proxyMatched = true;
+    const verified = await domains.VerifyDomain(owner.id, domain.id);
+    assert.equal(verified.isVerified, true);
+    assert.equal(verified.checks.routingMethod, "https");
+    proxyMatched = false;
+    assert.equal((await domains.VerifyDomain(owner.id, domain.id)).isVerified, false);
+    dnsChecks = { ownership: true, routing: true };
+});
+
+test("custom hostnames survive lists, details, dashboard and analytics formatting", async () => {
+    const domain = await domains.CreateDomainService(owner.id, `${prefix}-canonical.example.com`);
+    await domains.VerifyDomain(owner.id, domain.id);
+    const saved = await prisma.link.create({ data: { userId: owner.id, domainId: domain.id, shortCode: `${prefix}-canonical`, longUrl: "https://example.test/canonical", title: "Branded" } });
+    await prisma.clickEvent.create({ data: { linkId: saved.id, ip: "1.1.1.1", country: "India", device: "Desktop" } });
+    const expected = `https://${domain.domain}/${saved.shortCode}`;
+    const list = await links.UserLinksServices(owner.id, saved.shortCode);
+    assert.equal(list.links[0].shortUrl, expected);
+    assert.deepEqual(list.links[0].domain, { domain: domain.domain });
+    const paginated = await links.GetUserLinksService(owner.id, { page: 1, limit: 10, search: saved.shortCode });
+    assert.equal(paginated.links[0].shortUrl, expected);
+    assert.equal((await links.GetLinkByIdService(saved.id, owner.id)).shortUrl, expected);
+    assert.equal((await links.GetLinkAnalyticsService(saved.id, owner.id)).link.shortUrl, expected);
+    const home = await links.HomePageDataService(owner.id);
+    assert.equal(home.topLinks.find(link => link.linkId === saved.id)?.shortUrl, expected);
+    const overall = await links.OverAllAnalyticsService(owner.id);
+    assert.equal(overall?.topLinks.find(link => link.id === saved.id)?.shortUrl, expected);
+    await prisma.link.update({ where: { id: saved.id }, data: { qrUrl: "https://images.example/qr.png" } });
+    assert.equal((await links.UserQrServices(owner.id)).qr.find(link => link.id === saved.id)?.shortUrl, expected);
 });
