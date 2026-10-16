@@ -14,6 +14,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deployment-config:
+    name: Deployment script and configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n scripts/deploy-ec2.sh
+      - run: python3 test/deploy-ec2.test.py
+      - name: Validate Neon-only EC2 Compose configuration
+        run: |
+          cp .env.example .env
+          docker compose -f compose.ec2.yaml config --quiet
+
   checks:
     name: Typecheck, build and HTTP tests (Node ${{ matrix.node }})
     runs-on: ubuntu-latest

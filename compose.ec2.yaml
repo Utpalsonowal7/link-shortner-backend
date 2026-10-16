@@ -1,0 +1,52 @@
+# Neon PostgreSQL + Redis/API on EC2. Use -p link-shortner-backend to
+# preserve the existing manually deployed containers and Redis volume.
+services:
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  migrate:
+    image: lnkshrt-migrate:${DEPLOY_SHA:-local}
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set Neon DATABASE_URL in .env}
+    restart: "no"
+    logging: *logging
+
+  api:
+    image: lnkshrt-api:${DEPLOY_SHA:-local}
+    build:
+      context: .
+      target: runtime
+    init: true
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: ${DATABASE_URL:?Set Neon DATABASE_URL in .env}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  redis-data:

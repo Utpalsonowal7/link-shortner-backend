@@ -111,3 +111,10 @@ For hosting, build `docker build --target runtime -t utpx-backend .`. The runtim
 See [the frontend API contract](docs/bio-domains-api.md) for endpoints, payloads, publishing, DNS records, and hosting requirements. This release adds a database migration for bio pages and changes domain deletion to protect associated links. Apply migrations before deploying the new code.
 
 CI also builds the Docker stack, applies migrations, checks HTTP health, and verifies that the API runs without root. Integration tests use real PostgreSQL/Redis and deterministic DNS responses; unit tests exercise TXT/CNAME matching and DNS error handling. Public DNS propagation and hosting TLS must be checked with your actual domain when configured.
+
+## AWS EC2 continuous deployment
+
+See [EC2 deployment setup](docs/ec2-cd.md) for the GitHub OIDC/SSM roles,
+production environment variables, and Neon-only Docker Compose configuration.
+The workflow deploys successful main CI runs; the one-time AWS setup must be
+completed before it can access your instance.
