@@ -41,7 +41,7 @@ const createDomain = async (userId: number, value: unknown) => {
 };
 const verifyDomain = async (userId: number, id: number) => {
     const domain = await owned(userId, id);
-    const checks = await checkDomainDns(domain.domain, domain.verificationToken, target());
+    const checks = { ...await checkDomainDns(domain.domain, domain.verificationToken, target()) };
     const cnameMatched = checks.routing;
     if (checks.ownership && !checks.routing) checks.routing = await checkProxyRouting(domain.domain);
     const routingMethod = checks.routing ? (cnameMatched ? "cname" : "https") : null;
