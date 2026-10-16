@@ -44,3 +44,34 @@ test("bio patches do not reset absent fields, and allow clearing links/domain", 
     assert.deepEqual(updateBioSchema.parse({ domainId: null, links: [] }), { domainId: null, links: [] });
     assert.equal(updateBioSchema.safeParse({}).success, false);
 });
+
+test("bio design defaults preserve old clients and patches preserve omitted design", () => {
+    const page = createBioSchema.parse({ slug: "older-page", displayName: "Older" });
+    assert.deepEqual(page.design, { preset: "minimal", buttonStyle: "rounded", socials: [] });
+    assert.equal("design" in updateBioSchema.parse({ displayName: "New" }), false);
+    assert.equal(createBioSchema.parse({ slug: "icons", displayName: "Icons", links: [{ title: "Site", url: "https://example.com" }] }).links[0].icon, "link");
+});
+
+test("bio design accepts supported palettes, buttons, social/email and link icons", () => {
+    const design = { preset: "ocean", buttonStyle: "pill", socials: [
+        { platform: "github", url: "https://github.com/utpal" },
+        { platform: "email", url: "hello@example.com" },
+    ] };
+    assert.deepEqual(updateBioSchema.parse({ design }).design, design);
+    assert.equal(createBioSchema.parse({ slug: "icons", displayName: "Icons", links: [{ title: "Code", url: "https://github.com", icon: "code" }] }).links[0].icon, "code");
+    assert.equal(updateBioSchema.safeParse({ design: { ...design, socials: [] } }).success, true);
+});
+
+test("bio design rejects CSS injection, unsupported icons and unsafe social destinations", () => {
+    const base = { preset: "rose", buttonStyle: "outline", socials: [] };
+    for (const design of [
+        { ...base, preset: "url(javascript:alert(1))" },
+        { ...base, css: "body{display:none}" },
+        { ...base, socials: [{ platform: "github", url: "javascript:alert(1)" }] },
+        { ...base, socials: [{ platform: "github", url: "https://u:p@example.com" }] },
+        { ...base, socials: [{ platform: "email", url: "mailto:hi@example.com" }] },
+        { ...base, socials: [{ platform: "email", url: "hi@example.com?body=spam" }] },
+        { ...base, socials: Array(9).fill({ platform: "website", url: "https://example.com" }) },
+    ]) assert.equal(updateBioSchema.safeParse({ design }).success, false);
+    assert.equal(updateBioSchema.safeParse({ links: [{ title: "Bad", url: "https://example.com", icon: "<svg>" }] }).success, false);
+});

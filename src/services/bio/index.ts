@@ -6,8 +6,8 @@ import type { Prisma } from "../../../generated/prisma/client.js";
 
 const include = { links: { orderBy: { position: "asc" as const } } };
 const publicSelect = {
-    slug: true, displayName: true, description: true, avatarUrl: true, theme: true,
-    links: { where: { isActive: true }, orderBy: { position: "asc" as const }, select: { id: true, title: true, url: true, position: true } },
+    slug: true, displayName: true, description: true, avatarUrl: true, theme: true, design: true,
+    links: { where: { isActive: true }, orderBy: { position: "asc" as const }, select: { id: true, title: true, url: true, icon: true, position: true } },
 } satisfies Prisma.BioPageSelect;
 function translate(error: unknown): never {
     const code = (error as { code?: string }).code;

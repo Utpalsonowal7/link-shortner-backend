@@ -187,6 +187,7 @@ model BioPage {
   description String @default("")
   avatarUrl String?
   theme String @default("light")
+  design Json @default("{\"preset\":\"minimal\",\"buttonStyle\":\"rounded\",\"socials\":[]}")
   isPublished Boolean @default(false)
   domainId Int? @unique
   domain Domain? @relation(fields: [domainId], references: [id], onDelete: Restrict)
@@ -204,6 +205,7 @@ model BioLink {
   title String
   url String
   position Int
+  icon String @default("link")
   isActive Boolean @default(true)
   @@index([pageId, position])
   @@map("bio_links")
