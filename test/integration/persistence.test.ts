@@ -224,6 +224,14 @@ test("bio HTTP CRUD keeps drafts private and publishes only safe public fields a
     const publicPage = (await published.json()).data;
     assert.equal(publicPage.links.length, 1);
     assert.equal(publicPage.links[0].title, "Portfolio");
+    assert.deepEqual(publicPage.design, { preset: "minimal", buttonStyle: "rounded", socials: [] });
+    const design = { preset: "forest", buttonStyle: "shadow", socials: [{ platform: "github", url: "https://github.com/utpal" }] };
+    const styled = await request(`/api/v1/bio-pages/${page.id}`, "PATCH", { design, links: [{ title: "Code", url: "https://github.com/utpal", icon: "code" }] });
+    assert.equal(styled.status, 200);
+    assert.deepEqual((await bio.getBio(owner.id, page.id)).design, design);
+    const styledPublic = (await (await request(`/api/v1/public/bio-pages/${input.slug}`, "GET", undefined, false)).json()).data;
+    assert.deepEqual(styledPublic.design, design);
+    assert.equal(styledPublic.links[0].icon, "code");
     for (const privateField of ["userId", "domainId", "isPublished", "verificationToken"]) assert.equal(privateField in publicPage, false);
     assert.equal((await request("/api/v1/bio-pages", "POST", input)).status, 409);
     await assert.rejects(bio.getBio(other.id, page.id), { statusCode: 404 });

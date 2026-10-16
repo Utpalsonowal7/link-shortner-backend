@@ -111,3 +111,32 @@ For hosting, build `docker build --target runtime -t utpx-backend .`. The runtim
 See [the frontend API contract](docs/bio-domains-api.md) for endpoints, payloads, publishing, DNS records, and hosting requirements. This release adds a database migration for bio pages and changes domain deletion to protect associated links. Apply migrations before deploying the new code.
 
 CI also builds the Docker stack, applies migrations, checks HTTP health, and verifies that the API runs without root. Integration tests use real PostgreSQL/Redis and deterministic DNS responses; unit tests exercise TXT/CNAME matching and DNS error handling. Public DNS propagation and hosting TLS must be checked with your actual domain when configured.
+
+## Bio page design upgrade
+
+Bio pages now accept a validated `design` object: `preset` (minimal, midnight,
+ocean, rose, forest, sunset), `buttonStyle` (rounded, pill, outline, shadow), and
+up to eight `socials` entries. Supported platforms are GitHub, LinkedIn,
+Instagram, YouTube, X, website, and email. Web profiles require HTTP(S) URLs
+without credentials; email entries use a plain email address. Each link also
+accepts a supported `icon` name. Arbitrary CSS/HTML and icon markup are rejected.
+
+Apply the committed `20261016110000_bio_design` migration before deploying the
+matching frontend. Existing pages/links receive minimal/rounded design and link
+icon defaults. Old clients may omit these fields; patches preserve omitted
+design settings. Public bio responses include the design and link icons.
+
+On the existing EC2 deployment, after merging this backend change and passing CI:
+
+```bash
+cd ~/apps/link-shortner-backend
+git pull --ff-only origin main
+sudo docker compose -f compose.aws.yaml build
+sudo docker compose -f compose.aws.yaml run --rm --no-deps migrate
+sudo docker compose -f compose.aws.yaml up -d --no-deps --force-recreate api
+curl --fail https://l.utpx.in/health-check
+```
+
+The migration uses the Neon URL from your server environment. Keep that URL
+private. Deploy this backend before merging/deploying the frontend design PR;
+the older backend rejects the new fields.
