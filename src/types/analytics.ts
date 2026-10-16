@@ -23,6 +23,7 @@ export interface AnalyticsBreakdowns {
 }
 export interface LinkAnalyticsRow extends AnalyticsBreakdowns,
     Pick<Link, "id" | "longUrl" | "shortCode" | "title" | "tags" | "createdAt" | "expiresAt" | "isActive" | "is_password_protected"> {
+    domainName: string | null;
     totalClicks: bigint;
     uniqueVisitors: bigint;
     countries: bigint;
@@ -38,7 +39,7 @@ export interface OverallAnalyticsRow extends AnalyticsBreakdowns {
     uniqueVisitors: number;
     avgDailyClicks: number;
     countriesReached: number;
-    topLinks: { id: number; desc: string | null; shortLink: string; clicks: number }[];
+    topLinks: { id: number; desc: string | null; shortLink: string; domainName?: string | null; shortUrl?: string; clicks: number }[];
 }
 export interface HourlyClicksRow { hour: Date; clicks: bigint }
-export interface TopLinkRow { linkId: number; clicks: number; shortCode: string; longUrl: string }
+export interface TopLinkRow { linkId: number; clicks: number; shortCode: string; longUrl: string; domainName: string | null }

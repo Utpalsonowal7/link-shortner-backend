@@ -140,3 +140,10 @@ curl --fail https://l.utpx.in/health-check
 The migration uses the Neon URL from your server environment. Keep that URL
 private. Deploy this backend before merging/deploying the frontend design PR;
 the older backend rejects the new fields.
+
+## Proxied custom domains and HTTPS
+
+See [custom-domain routing and HTTPS](docs/custom-domain-https.md) for TXT +
+CNAME/HTTPS proof verification, proxy requirements, and the distinction between
+edge certificates and origin TLS. Link lists/details/analytics retain the assigned
+custom hostname. This change does not automatically issue per-host certificates.

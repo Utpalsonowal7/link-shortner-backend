@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/api_error.js";
 import { requiredEnv } from "../../utils/env.js";
 import { normalizeDomain } from "../../utils/domain.js";
 import { checkDomainDns } from "./dns.js";
+import { checkProxyRouting } from "./proxy.js";
 
 const target = () => normalizeDomain(requiredEnv("CUSTOM_DOMAIN_TARGET"));
 function present(domain: Domain) {
@@ -40,12 +41,15 @@ const createDomain = async (userId: number, value: unknown) => {
 };
 const verifyDomain = async (userId: number, id: number) => {
     const domain = await owned(userId, id);
-    const checks = await checkDomainDns(domain.domain, domain.verificationToken, target());
+    const checks = { ...await checkDomainDns(domain.domain, domain.verificationToken, target()) };
+    const cnameMatched = checks.routing;
+    if (checks.ownership && !checks.routing) checks.routing = await checkProxyRouting(domain.domain);
+    const routingMethod = checks.routing ? (cnameMatched ? "cname" : "https") : null;
     const isVerified = checks.ownership && checks.routing;
     const updated = await prisma.domain.update({ where: { id, userId }, data: {
         isVerified, verifiedAt: isVerified ? new Date() : null,
     } });
-    return { ...present(updated), checks };
+    return { ...present(updated), checks: { ...checks, routingMethod } };
 };
 const deleteDomain = async (userId: number, id: number) => {
     await owned(userId, id);
